@@ -1,0 +1,353 @@
+/**
+ * Copyright (C) 2025 by Electronya
+ *
+ * @file      datastore.h
+ * @author    jbacon
+ * @date      2025-08-10
+ * @brief     Datastore Service
+ *
+ *            Datastore service API definition
+ *
+ * @defgroup  datastore datastore
+ *
+ * @{
+ */
+
+#ifndef DATASTORE_SRV
+#define DATASTORE_SRV
+
+#include <zephyr/kernel.h>
+
+#include "datastoreMeta.h"
+
+/**
+ * @brief   Float datapoint IDs.
+ * @note    Data is coming from X-macros in datastoreMeta.h
+ */
+enum FloatDatapoint
+{
+#define X(name, flags, defaultVal) name,
+  DATASTORE_FLOAT_DATAPOINTS
+#undef
+  FLOAT_DATAPOINT_COUNT,
+};
+
+/**
+ * @brief   Unsigned integer datapoint IDs.
+ * @note    Data is coming from X-macros in datastoreMeta.h
+ */
+enum UintDatapoint
+{
+#define X(name, flags, defaultVal) name,
+  DATASTORE_UINT_DATAPOINTS
+#undef
+  UINT_DATAPOINT_COUNT,
+};
+
+/**
+ * @brief   signed integer datapoint IDs.
+ * @note    Data is coming from X-macros in datastoreMeta.h
+ */
+enum IntDatapoint
+{
+#define X(name, flags, defaultVal) name,
+  DATASTORE_INT_DATAPOINTS
+#undef
+  INT_DATAPOINT_COUNT,
+};
+
+/**
+ * @brief   Multi-state datapoint IDs.
+ * @note    Data is coming from X-macros in datastoreMeta.h
+ */
+enum MultiStateDatapoint
+{
+#define X(name, flags, defaultVal) name,
+  DATASTORE_MULTI_STATE_DATAPOINTS
+#undef
+  MULTI_STATE_DATAPOINT_COUNT,
+};
+
+/**
+ * @brief   Button datapoint IDs.
+ * @note    Data is coming from X-macros in datastoreMeta.h
+ */
+enum ButtonDatapoint
+{
+#define X(name, flags, defaultVal) name,
+  DATASTORE_BUTTON_DATAPOINTS
+#undef
+  BUTTON_DATAPOINT_COUNT,
+};
+
+/**
+ * @brief   Maximum subscriptions allowed for each datatype.
+ */
+typedef struct
+{
+  size_t maxFloatSubs;            /**< Maximum float subscriptions */
+  size_t maxUintSubs;             /**< Maximum unsigned integer subscriptions */
+  size_t maxIntSubs;              /**< Maximum signed integer subscriptions */
+  size_t maxMultiStateSubs;       /**< Maximum multi-state subscriptions */
+  size_t maxButtonSubs;           /**< Maximum button subscriptions */
+} DatastoreMaxSubs_t;
+
+/**
+ * @brief   The float subscription callback.
+ */
+typedef int (*DatastoreFloatSubCb_t)(float value[], size_t *valCount);
+
+/**
+ * @brief   The unsigned integer subscription callback.
+ */
+typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t *valCount);
+
+/**
+ * @brief   The integer subscription callback.
+ */
+typedef int (*DatastoreIntSubCb_t)(int32_t value[], size_t *valCount);
+
+/**
+ * @brief   The button subscription callback.
+ */
+typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t *valCount);
+
+/**
+ * @brief   The float subscription record.
+ */
+typedef struct
+{
+  uint32_t datapointId;                 /**< The datapoint ID */
+  size_t valCount;                      /**< The datapoint count */
+  DatastoreFloatSubCb_t callback;       /**< The subscription callback */
+} DatastoreFloatSub_t;
+
+/**
+ * @brief   The unsigned integer subscription record.
+ */
+typedef struct
+{
+  uint32_t datapointId;                 /**< The datapoint ID */
+  size_t valCount;                      /**< The datapoint count */
+  DatastoreFloatSubCb_t callback;       /**< The subscription callback */
+} DatastoreUintSub_t;
+
+/**
+ * @brief   The integer subscription record.
+ */
+typedef struct
+{
+  uint32_t datapointId;                 /**< The datapoint ID */
+  size_t valCount;                      /**< The datapoint count */
+  DatastoreFloatSubCb_t callback;       /**< The subscription callback */
+} DatastoreIntSub_t;
+
+/**
+ * @brief   The multi-state subscription record.
+ */
+typedef struct
+{
+  uint32_t datapointId;                 /**< The datapoint ID */
+  size_t valCount;                      /**< The datapoint count */
+  DatastoreFloatSubCb_t callback;       /**< The subscription callback */
+} DatastoreMultiStateSub_t;
+
+/**
+ * @brief   The button subscription record.
+ */
+typedef struct
+{
+  uint32_t datapointId;                 /**< The datapoint ID */
+  size_t valCount;                      /**< The datapoint count */
+  DatastoreFloatSubCb_t callback;       /**< The subscription callback */
+} DatastoreButtonSub_t;
+
+/**
+ * @brief   Initialize the datastore.
+ *
+ * @param maxSubs       The maximum subscriptions for each datatype.
+ * @param threadId      The service thread ID.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreInit(DatastoreMaxSubs_t maxSubs, uint32_t priority,
+                  k_tid_t *threadId);
+
+/**
+ * @brief   Subscribe to float datapoint.
+ *
+ * @param sub           The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeFloat(DatastoreFloatSub_t *sub);
+
+/**
+ * @brief   Read a float datapoint.
+ *
+ * @param datapointId   The datapoint ID.
+ * @param valCount      The count of value to read.
+ * @param response      The response queue.
+ * @param values        The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadFloat(uint32_t datapointId, size_t valCount,
+                       struct k_msgq *response, float values[]);
+
+/**
+ * @brief   Write a float datapoint
+ *
+ * @param datapointId   The datapoint ID.
+ * @param values        The values to write.
+ * @param valCount      The count of values to write.
+ * @param response      The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteFloat(uint32_t datapointId, float values[],
+                        size_t valCount, struct k_msgq *response);
+
+/**
+ * @brief   Subscribe to unsigned integer datapoint.
+ *
+ * @param sub           The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeUint(DatastoreUintSub_t *sub);
+
+/**
+ * @brief   Read an unsigned integer datapoint.
+ *
+ * @param datapointId   The datapoint ID.
+ * @param valCount      The count of value to read.
+ * @param response      The response queue.
+ * @param values        The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadUint(uint32_t datapointId, size_t valCount,
+                      struct k_msgq *response, uint32_t values[]);
+
+/**
+ * @brief   Write an unsigned integer datapoint
+ *
+ * @param datapointId   The datapoint ID.
+ * @param values        The values to write.
+ * @param valCount      The count of values to write.
+ * @param response      The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteUint(uint32_t datapointId, uint32_t values[],
+                       size_t valCount, struct k_msgq *response);
+
+/**
+ * @brief   Subscribe to integer datapoint.
+ *
+ * @param sub           The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeInt(DatastoreIntSub_t *sub);
+
+/**
+ * @brief   Read a integer datapoint.
+ *
+ * @param datapointId   The datapoint ID.
+ * @param valCount      The count of value to read.
+ * @param response      The response queue.
+ * @param values        The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadInt(uint32_t datapointId, size_t valCount,
+                     struct k_msgq *response, int32_t values[]);
+
+/**
+ * @brief   Write a integer datapoint
+ *
+ * @param datapointId   The datapoint ID.
+ * @param values        The values to write.
+ * @param valCount      The count of values to write.
+ * @param response      The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteInt(uint32_t datapointId, int32_t values[],
+                      size_t valCount, struct k_msgq *response);
+
+/**
+ * @brief   Subscribe to multi-state datapoint.
+ *
+ * @param sub           The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub);
+
+/**
+ * @brief   Read a multi-state datapoint.
+ *
+ * @param datapointId   The datapoint ID.
+ * @param valCount      The count of value to read.
+ * @param response      The response queue.
+ * @param values        The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadMultiState(uint32_t datapointId, size_t valCount,
+                            struct k_msgq *response, uint32_t values[]);
+
+/**
+ * @brief   Write a multi-state datapoint
+ *
+ * @param datapointId   The datapoint ID.
+ * @param values        The values to write.
+ * @param valCount      The count of values to write.
+ * @param response      The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[],
+                             size_t valCount, struct k_msgq *response);
+
+/**
+ * @brief   Subscribe to button datapoint.
+ *
+ * @param sub           The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeButton(DatastoreButtonSub_t *sub);
+
+/**
+ * @brief   Read a button datapoint.
+ *
+ * @param datapointId   The datapoint ID.
+ * @param valCount      The count of value to read.
+ * @param response      The response queue.
+ * @param values        The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadButton(uint32_t datapointId, size_t valCount,
+                        struct k_msgq *response, uint32_t values[]);
+
+/**
+ * @brief   Write a button datapoint
+ *
+ * @param datapointId   The datapoint ID.
+ * @param values        The values to write.
+ * @param valCount      The count of values to write.
+ * @param response      The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteButton(uint32_t datapointId, uint32_t values[],
+                         size_t valCount, struct k_msgq *response);
+
+#endif    /* DATASTORE_SRV */
+
+/** @} */
