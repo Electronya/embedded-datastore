@@ -244,6 +244,52 @@ int datastoreSubscribeFloat(DatastoreFloatSub_t *sub)
   return 0;
 }
 
+int datastorePauseSubFloat(DatastoreFloatSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid float subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < floatSubCount; i++)
+  {
+    if(floatSubs[i].callback == subCallback)
+    {
+      err = 0;
+      floatSubs[i].isPaused = true;
+    }
+  }
+
+  return err;
+}
+
+int datastoreUnpauseSubFloat(DatastoreFloatSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid float subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < floatSubCount; i++)
+  {
+    if(floatSubs[i].callback == subCallback)
+    {
+      err = 0;
+      floatSubs[i].isPaused = false;
+    }
+  }
+
+  return err;
+}
+
 int datastoreReadFloat(uint32_t datapointId, size_t valCount,
                        struct k_msgq *response, float values[])
 {
@@ -291,6 +337,52 @@ int datastoreSubscribeUint(DatastoreUintSub_t *sub)
   return 0;
 }
 
+int datastorePauseSubUint(DatastoreUintSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid unsigned integer subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < uintSubCount; i++)
+  {
+    if(uintSubs[i].callback == subCallback)
+    {
+      err = 0;
+      uintSubs[i].isPaused = true;
+    }
+  }
+
+  return err;
+}
+
+int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid unsigned integer subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < uintSubCount; i++)
+  {
+    if(uintSubs[i].callback == subCallback)
+    {
+      err = 0;
+      uintSubs[i].isPaused = false;
+    }
+  }
+
+  return err;
+}
+
 int datastoreReadUint(uint32_t datapointId, size_t valCount,
                       struct k_msgq *response, uint32_t values[])
 {
@@ -332,6 +424,52 @@ int datastoreSubscribeInt(DatastoreIntSub_t *sub)
   intSubCount++;
 
   return 0;
+}
+
+int datastorePauseSubInt(DatastoreIntSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid signed integer subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < intSubCount; i++)
+  {
+    if(intSubs[i].callback == subCallback)
+    {
+      err = 0;
+      intSubs[i].isPaused = true;
+    }
+  }
+
+  return err;
+}
+
+int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid signed integer subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < intSubCount; i++)
+  {
+    if(intSubs[i].callback == subCallback)
+    {
+      err = 0;
+      intSubs[i].isPaused = false;
+    }
+  }
+
+  return err;
 }
 
 int datastoreReadInt(uint32_t datapointId, size_t valCount,
@@ -377,6 +515,52 @@ int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub)
   return 0;
 }
 
+int datastorePauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid multi-state subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < multiStateSubCount; i++)
+  {
+    if(multiStateSubs[i].callback == subCallback)
+    {
+      err = 0;
+      multiStateSubs[i].isPaused = true;
+    }
+  }
+
+  return err;
+}
+
+int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid multi-state subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < multiStateSubCount; i++)
+  {
+    if(multiStateSubs[i].callback == subCallback)
+    {
+      err = 0;
+      multiStateSubs[i].isPaused = false;
+    }
+  }
+
+  return err;
+}
+
 int datastoreReadMultiState(uint32_t datapointId, size_t valCount,
                             struct k_msgq *response, uint32_t values[])
 {
@@ -418,6 +602,52 @@ int datastoreSubscribeButton(DatastoreButtonSub_t *sub)
   buttonSubCount++;
 
   return 0;
+}
+
+int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid button subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < buttonSubCount; i++)
+  {
+    if(buttonSubs[i].callback == subCallback)
+    {
+      err = 0;
+      buttonSubs[i].isPaused = true;
+    }
+  }
+
+  return err;
+}
+
+int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid button subscription callback", err);
+    return err;
+  }
+
+  for(uint32_t i = 0; i < buttonSubCount; i++)
+  {
+    if(buttonSubs[i].callback == subCallback)
+    {
+      err = 0;
+      buttonSubs[i].isPaused = false;
+    }
+  }
+
+  return err;
 }
 
 int datastoreReadButton(uint32_t datapointId, size_t valCount,

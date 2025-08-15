@@ -48,7 +48,7 @@ typedef union
  */
 typedef struct
 {
-  Datapoint_t data;               /**< The data. */
+  DatapointData_t data;           /**< The data. */
   uint32_t flags;                 /**< The datapoint flags. */
 } Datapoint_t;
 
