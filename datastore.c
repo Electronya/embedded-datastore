@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(DATASTORE_LOGGER_NAME);
 
 #define DATASTORE_STACK_SIZE                                    (256)
 #define DATASTORE_MSG_COUNT                                     (10)
+#define DATASTORE_RESPONSE_TIMEOUT                              (5)
 
 /**
  * @brief The thread stack.
@@ -41,8 +42,10 @@ typedef struct
 {
   datastoreMsgtype_t msgType;
   DatapointType_t dataType;
-  DatapointData_t WriteData;
-  DatapointData_t *ReadData;
+  uint32_t dataId;
+  DatapointData_t *data;
+  size_t valCount;
+  struct K_msgq *response;
 } DatastoreMsg_t;
 
 /**
@@ -294,16 +297,43 @@ int datastoreReadFloat(uint32_t datapointId, size_t valCount,
                        struct k_msgq *response, float values[])
 {
   int err;
-  DatastoreMsg_t msg;
-  size_t valId = 0;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_FLOAT,
+                        .dataId = datapointId, .data.floatVal = values,
+                        .valCount = valCount, .response = response };
 
-  return 0;
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+  if(err < 0)
+    return err;
+
+  return resStatus;
 }
 
 int datastoreWriteFloat(uint32_t datapointId, float values[],
                         size_t valCount, struct k_msgq *response)
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_FLOAT,
+                        .dataId = datapointId, .data.floatVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  if(response)
+  {
+    err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+    if(err < 0)
+      return err;
+  }
+
+  return resStatus;
 }
 
 int datastoreSubscribeUint(DatastoreUintSub_t *sub)
@@ -386,13 +416,44 @@ int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback)
 int datastoreReadUint(uint32_t datapointId, size_t valCount,
                       struct k_msgq *response, uint32_t values[])
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_UINT,
+                        .dataId = datapointId, .data.uintVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+  if(err < 0)
+    return err;
+
+  return resStatus;
 }
 
 int datastoreWriteUint(uint32_t datapointId, uint32_t values[],
                        size_t valCount, struct k_msgq *response)
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_UINT,
+                        .dataId = datapointId, .data.uintVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  if(response)
+  {
+    err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+    if(err < 0)
+      return err;
+  }
+
+  return resStatus;
 }
 
 int datastoreSubscribeInt(DatastoreIntSub_t *sub)
@@ -475,13 +536,44 @@ int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback)
 int datastoreReadInt(uint32_t datapointId, size_t valCount,
                      struct k_msgq *response, int32_t values[])
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_INT,
+                        .dataId = datapointId, .data.intVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+  if(err < 0)
+    return err;
+
+  return resStatus;
 }
 
 int datastoreWriteInt(uint32_t datapointId, int32_t values[],
                       size_t valCount, struct k_msgq *response)
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_INT,
+                        .dataId = datapointId, .data.intVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  if(response)
+  {
+    err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+    if(err < 0)
+      return err;
+  }
+
+  return resStatus;
 }
 
 int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub)
@@ -564,13 +656,46 @@ int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
 int datastoreReadMultiState(uint32_t datapointId, size_t valCount,
                             struct k_msgq *response, uint32_t values[])
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ,
+                        .dataType = DATAPOINT_MULTI_STATE,
+                        .dataId = datapointId, .data.uintVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+  if(err < 0)
+    return err;
+
+  return resStatus;
 }
 
 int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[],
                              size_t valCount, struct k_msgq *response)
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE,
+                        .dataType = DATAPOINT_MULTI_STATE,
+                        .dataId = datapointId, .data.uintVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  if(response)
+  {
+    err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+    if(err < 0)
+      return err;
+  }
+
+  return resStatus;
 }
 
 int datastoreSubscribeButton(DatastoreButtonSub_t *sub)
@@ -653,12 +778,44 @@ int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
 int datastoreReadButton(uint32_t datapointId, size_t valCount,
                         struct k_msgq *response, uint32_t values[])
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_BUTTON,
+                        .dataId = datapointId, .data.uintVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+  if(err < 0)
+    return err;
+
+  return resStatus;
 }
 
 int datastoreWriteButton(uint32_t datapointId, uint32_t values[],
                          size_t valCount, struct k_msgq *response)
 {
-  return 0;
+  int err;
+  int resStatus = 0;
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE,
+                        .dataType = DATAPOINT_BUTTON,
+                        .dataId = datapointId, .data.uintVal = values,
+                        .valCount = valCount, .response = response };
+
+  err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
+  if(err < 0)
+    return err;
+
+  if(response)
+  {
+    err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
+    if(err < 0)
+      return err;
+  }
+
+  return resStatus;
 }
 /** @} */
