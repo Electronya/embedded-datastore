@@ -48,114 +48,9 @@ typedef struct
 } DatastoreMsg_t;
 
 /**
- * @brief   Float datapoints.
- * @note    Data is coming from X-macros in datastoreMeta.h
- */
-static Datapoint_t floats[] = {
-#define X(name, flags, defaultVal) {.data.floatVal = defaultVal, .flags = flags}
-  DATASTORE_FLOAT_DATAPOINTS
-#undef
-};
-
-/**
- * @brief   Unsigned integer datapoints.
- * @note    Data is coming from X-macros in datastoreMeta.h
- */
-static Datapoint_t uints[] = {
-#define X(name, flags, defaultVal) {.data.uintVal = defaultVal, .flags = flags}
-  DATASTORE_UINT_DATAPOINTS
-#undef
-};
-
-/**
- * @brief   Singed integer datapoints.
- * @note    Data is coming from X-macros in datastoreMeta.h
- */
-static Datapoint_t ints[] = {
-#define X(name, flags, defaultVal) {.data.intVal = defaultVal, .flags = flags}
-  DATASTORE_FLOAT_DATAPOINTS
-#undef
-};
-
-/**
- * @brief   Multi-state datapoints.
- * @note    Data is coming from X-macros in datastoreMeta.h
- */
-static Datapoint_t multiStates[] = {
-#define X(name, flags, defaultVal) {.data.uintVal = defaultVal, .flags = flags}
-  DATASTORE_MULTI_STATE_DATAPOINTS
-#undef
-};
-
-/**
- * @brief   Button datapoints.
- * @note    Data is coming from X-macros in datastoreMeta.h
- */
-static Datapoint_t buttons[] = {
-#define X(name, flags, defaultVal) {.data.uintVal = defaultVal, .flags = flags}
-  DATASTORE_FLOAT_DATAPOINTS
-#undef
-};
-
-/**
  * @brief   The service thread.
  */
 static k_thread thread;
-
-/**
- * @brief   The float subscriptions.
- */
-static DatastoreFloatSub_t *floatSubs = NULL;
-
-/**
- * @brief   The float subscriptions count.
- */
-static uint32_t floatSubCount = 0;
-
-/**
- * @brief   The unsigned integer subscriptions.
- */
-static DatastoreUintSub_t *uintSubs = NULL;
-
-/**
- * @brief   The unsigned subscriptions count.
- */
-static uint32_t uintSubCount = 0;
-
-/**
- * @brief   The signed integer subscriptions.
- */
-static DatastoreIntSub_t *intSubs = NULL;
-
-/**
- * @brief   The signed integer subscriptions count.
- */
-static uint32_t intSubCount = 0;
-
-/**
- * @brief   The multi-state subscriptions.
- */
-static DatastoreMultiStateSub_t multiStateSubs = NULL;
-
-/**
- * @brief   The multi-state subscriptions count.
- */
-static uint32_t multiStateSubCount = 0;
-
-/**
- * @brief   The button subscriptions.
- */
-static DatastoreButtonSub_t buttonSubs = NULL;
-
-/**
- * @brief   The buttons subscriptions count.
- */
-static uint32_t buttonSubCount = 0;
-
-/**
- * @brief   The datastore buffer pool.
- */
-static DatastoreBufferPool_t *bufPool;
 
 /**
  * @brief   The list of all the datapoint classified by type.
@@ -272,6 +167,7 @@ static int doInitialNotifications(void)
 static void run(void *p1, void *p2, void *p3)
 {
   int err;
+  DatastoreMsg_t msg;
   Datapoint_t *datapointTypes[DATAPOINT_TYPE_COUNT] = {floats, uints, ints, multiStates, buttons};
 
   // TODO: Initialize the datapoints from the NVM.
@@ -282,7 +178,23 @@ static void run(void *p1, void *p2, void *p3)
 
   for(;;)
   {
+    err = k_msgq_get(&datastoreQueue, &msg, K_FOREVER);
+    if(err < 0)
+    {
+      LOG_ERR("ERROR %d: unable to get a message", err);
+      continue;
+    }
 
+    switch(msg.msgType)
+    {
+      case DATASTORE_READ:
+      break;
+      case DATASTORE_WRITE:
+      break;
+      default:
+        LOG_WRN("unsupported message type %d", msg.msgType);
+      break;
+    }
   }
 }
 
@@ -290,70 +202,37 @@ int datastoreInit(DatastoreMaxSubs_t *maxSubs, size_t maxBufferSize, uint32_t pr
 {
   int err;
 
-  floatSubs = k_malloc(maxSubs->maxFloatSubs * sizeof(DatastoreFloatSub_t));
-  if(!floatSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for float subscription", err);
+  err = datastoreUtilAllocateFloatSubs(maxSubs->maxFloatSubs);
+  if(err < 0)
     return err;
-  }
 
-  uintSubs = k_malloc(maxSubs->maxUintSubs * sizeof(DatastoreUintSub_t));
-  if(!uintSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for unsigned integer subscription", err);
-    k_free(floatSubs);
-    goto cleanup;
-  }
+  err = datastoreUtilAllocateUintSubs(maxSubs->maxUintSubs);
+  if(err < 0)
+    return err;
 
-  intSubs = k_malloc(maxSubs->maxIntSubs * sizeof(DatastoreIntSub_t));
-  if(!intSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for signed integer subscription", err);
-    goto cleanup;
-  }
+  err = datastoreUtilAllocateIntSubs(maxSubs->maxIntSubs);
+  if(err < 0)
+    return err;
 
-  multiStateSubs = k_malloc(maxSubs->maxMultiStateSubs * sizeof(DatastoreMultiStateSub_t));
-  if(!multiStateSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for multi-state subscription", err);
-    goto cleanup;
-  }
+  err = datastoreUtilAllocateMultiStateSubs(maxSubs->maxMultiStateSubs);
+  if(err < 0)
+    return 0;
 
-  buttonSubs = k_malloc(maxSubs->maxButtonSubs * sizeof(DatastoreButtonSub_t));
-  if(!buttonSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for button subscription", err);
-    goto cleanup;
-  }
+  err = datastoreUtilAllocateButtonSubs(maxSubs->maxButtonSubs);
+  if(err < 0)
+    return err;
 
   err = datastoreUtilInitBufferPool(maxSubs);
   if(err < 0)
-    goto cleanup;
+    return err;
 
   *threadId = k_thread_create(&thread, datastoreStack, DATASTORE_STACK_SIZE, run,
                               NULL, NULL, NULL, K_PRIO_PREEMPT(priority), 0, K_FOREVER);
 
   err = k_thread_name_set(*threadId, "datastore");
   if(err< 0)
-  {
     LOG_ERR("ERROR %d: unable to set datastore thread name", err)
-    goto cleanup;
-  }
 
-  goto exit;
-
-cleanup:
-  k_free(floatSubs);
-  k_free(uintSubs);
-  k_free(intSubs);
-  k_free(multiStateSubs);
-  k_free(buttonSubs);
-exit:
   return err;
 }
 

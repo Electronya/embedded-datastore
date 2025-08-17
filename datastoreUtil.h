@@ -20,13 +20,58 @@
 #include "datastoreBufferPool.h"
 
 /**
+ * @brief   Allocate the array for the float subscriptions.
+ *
+ * @param[in]   maxSubCount: The maximum number of subscriptions.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilAllocateFloatSubs(size_t maxSubCount);
+
+/**
+ * @brief   Allocate the array for the unsigned integer subscriptions.
+ *
+ * @param[in]   maxSubCount: The maximum number of subscriptions.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilAllocateUintSubs(size_t maxSubCount);
+
+/**
+ * @brief   Allocate the array for the signed integer subscriptions.
+ *
+ * @param[in]   maxSubCount: The maximum number of subscriptions.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilAllocateIntSubs(size_t maxSubCount);
+
+/**
+ * @brief   Allocate the array for the multi-state subscriptions.
+ *
+ * @param[in]   maxSubCount: The maximum number of subscriptions.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilAllocateMultiStateSubs(size_t maxSubCount);
+
+/**
+ * @brief   Allocate the array for the button subscriptions.
+ *
+ * @param[in]   maxSubCount: The maximum number of subscriptions.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilAllocateButtonSubs(size_t maxSubCount);
+
+/**
  * @brief   Initialize the datastore buffer pool.
  *
  * @param[in]   maxSubs: The maximum subscription count.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilInitBufferPool(DatastoreMaxSubs_t *maxSubs, DatastoreBufferPool_t **pool);
+int datastoreUtilInitBufferPool(DatastoreMaxSubs_t *maxSubs);
 
 /**
  * @brief   Notify for a specific float datapoint.

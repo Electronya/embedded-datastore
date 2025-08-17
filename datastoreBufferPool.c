@@ -68,7 +68,7 @@ DatastoreBufferPool_t *datastoreBufPoolInit(size_t bufferSize, size_t poolSize)
   {
     err = -ENOSPC;
     LOG_ERR("ERROR %d: unable to allocate the buffer pool structure", err);
-    return err;
+    return NULL;
   }
 
   pool->bufferSize = bufferSize;
@@ -80,20 +80,13 @@ DatastoreBufferPool_t *datastoreBufPoolInit(size_t bufferSize, size_t poolSize)
   {
     err = -ENOSPC;
     LOG_ERR("ERROR %d: unable to allocate the buffer pool container", err);
-    goto cleanup;
+    return NULL;
   }
 
   err = allocateBuffers(pool);
   if(err < 0)
-    goto cleanup;
+    return NULL;
 
-  goto exit;
-
-cleanup;
-  freeBuffers(pool);
-  k_free(pool->buffers);
-  k_free(pool);
-exit:
   return pool;
 }
 
