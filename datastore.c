@@ -16,8 +16,8 @@
 #include <string.h>
 
 #include "datastore.h"
-
-#define DATASTORE_LOGGER_NAME datastore
+#include "datastoreBufferPool.h"
+#include "datastoreUtil.h"
 
 /* Setting module logging */
 LOG_MODULE_REGISTER(DATASTORE_LOGGER_NAME);
@@ -98,17 +98,70 @@ static Datapoint_t buttons[] = {
 #undef
 };
 
+/**
+ * @brief   The service thread.
+ */
 static k_thread thread;
+
+/**
+ * @brief   The float subscriptions.
+ */
 static DatastoreFloatSub_t *floatSubs = NULL;
+
+/**
+ * @brief   The float subscriptions count.
+ */
 static uint32_t floatSubCount = 0;
+
+/**
+ * @brief   The unsigned integer subscriptions.
+ */
 static DatastoreUintSub_t *uintSubs = NULL;
+
+/**
+ * @brief   The unsigned subscriptions count.
+ */
 static uint32_t uintSubCount = 0;
+
+/**
+ * @brief   The signed integer subscriptions.
+ */
 static DatastoreIntSub_t *intSubs = NULL;
+
+/**
+ * @brief   The signed integer subscriptions count.
+ */
 static uint32_t intSubCount = 0;
+
+/**
+ * @brief   The multi-state subscriptions.
+ */
 static DatastoreMultiStateSub_t multiStateSubs = NULL;
+
+/**
+ * @brief   The multi-state subscriptions count.
+ */
 static uint32_t multiStateSubCount = 0;
+
+/**
+ * @brief   The button subscriptions.
+ */
 static DatastoreButtonSub_t buttonSubs = NULL;
+
+/**
+ * @brief   The buttons subscriptions count.
+ */
 static uint32_t buttonSubCount = 0;
+
+/**
+ * @brief   The datastore buffer pool.
+ */
+static DatastoreBufferPool_t *bufPool;
+
+/**
+ * @brief   The list of all the datapoint classified by type.
+ */
+static Datapoint_t **datapoints[] = {floats, uints, ints, multiStates, buttons};
 
 K_MSGQ_DEFINE(datastoreQueue, sizeof(DatastoreMsg_t), DATASTORE_MSG_COUNT, 4);
 
@@ -125,15 +178,14 @@ static int doInitialNotifications(void)
 /**
  * @brief   The datastore service thread function.
  *
- * @param p1  Thread first parameter.
- * @param p2  Thread second parameter.
- * @param p3  Thread third parameter.
+ * @param[in]   p1: Thread first parameter.
+ * @param[in]   p2: Thread second parameter.
+ * @param[in]   p3: Thread third parameter.
  */
 static void run(void *p1, void *p2, void *p3)
 {
   int err;
-  Datapoint_t *datapointTypes[DATAPOINT_TYPE_COUNT] = {floats, uints, ints,
-                                                       multiStates, buttons};
+  Datapoint_t *datapointTypes[DATAPOINT_TYPE_COUNT] = {floats, uints, ints, multiStates, buttons};
 
   // TODO: Initialize the datapoints from the NVM.
 
@@ -147,20 +199,19 @@ static void run(void *p1, void *p2, void *p3)
   }
 }
 
-int datastoreInit(DatastoreMaxSubs_t maxSubs, uint32_t priority,
-                  k_tid_t *threadId)
+int datastoreInit(DatastoreMaxSubs_t *maxSubs, size_t maxBufferSize, uint32_t priority, k_tid_t *threadId)
 {
   int err;
 
-  floatSubs = k_malloc(maxSubs.maxFloatSubs * sizeof(DatastoreFloatSub_t));
+  floatSubs = k_malloc(maxSubs->maxFloatSubs * sizeof(DatastoreFloatSub_t));
   if(!floatSubs)
   {
     err = -ENOSPC;
     LOG_ERR("ERROR %d: unable to allocate memory for float subscription", err);
-    goto cleanup;
+    return err;
   }
 
-  uintSubs = k_malloc(maxSubs.maxUintSubs * sizeof(DatastoreUintSub_t));
+  uintSubs = k_malloc(maxSubs->maxUintSubs * sizeof(DatastoreUintSub_t));
   if(!uintSubs)
   {
     err = -ENOSPC;
@@ -169,7 +220,7 @@ int datastoreInit(DatastoreMaxSubs_t maxSubs, uint32_t priority,
     goto cleanup;
   }
 
-  intSubs = k_malloc(maxSubs.maxIntSubs * sizeof(DatastoreIntSub_t));
+  intSubs = k_malloc(maxSubs->maxIntSubs * sizeof(DatastoreIntSub_t));
   if(!intSubs)
   {
     err = -ENOSPC;
@@ -177,7 +228,7 @@ int datastoreInit(DatastoreMaxSubs_t maxSubs, uint32_t priority,
     goto cleanup;
   }
 
-  multiStateSubs = k_malloc(maxSubs.maxMultiStateSubs * sizeof(DatastoreMultiStateSub_t));
+  multiStateSubs = k_malloc(maxSubs->maxMultiStateSubs * sizeof(DatastoreMultiStateSub_t));
   if(!multiStateSubs)
   {
     err = -ENOSPC;
@@ -185,7 +236,7 @@ int datastoreInit(DatastoreMaxSubs_t maxSubs, uint32_t priority,
     goto cleanup;
   }
 
-  buttonSubs = k_malloc(maxSubs.maxButtonSubs * sizeof(DatastoreButtonSub_t));
+  buttonSubs = k_malloc(maxSubs->maxButtonSubs * sizeof(DatastoreButtonSub_t));
   if(!buttonSubs)
   {
     err = -ENOSPC;
@@ -193,9 +244,12 @@ int datastoreInit(DatastoreMaxSubs_t maxSubs, uint32_t priority,
     goto cleanup;
   }
 
-  *threadId = k_thread_create(&thread, datastoreStack, DATASTORE_STACK_SIZE,
-                              run, NULL, NULL, NULL, K_PRIO_PREEMPT(priority),
-                              0, K_FOREVER);
+  err = datastoreUtilInitBufferPool(maxSubs);
+  if(err < 0)
+    goto cleanup;
+
+  *threadId = k_thread_create(&thread, datastoreStack, DATASTORE_STACK_SIZE, run,
+                              NULL, NULL, NULL, K_PRIO_PREEMPT(priority), 0, K_FOREVER);
 
   err = k_thread_name_set(*threadId, "datastore");
   if(err< 0)
@@ -293,14 +347,12 @@ int datastoreUnpauseSubFloat(DatastoreFloatSubCb_t subCallback)
   return err;
 }
 
-int datastoreReadFloat(uint32_t datapointId, size_t valCount,
-                       struct k_msgq *response, float values[])
+int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *response, float values[])
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_FLOAT,
-                        .dataId = datapointId, .data.floatVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_FLOAT, .dataId = datapointId,
+                        .data.floatVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -318,9 +370,8 @@ int datastoreWriteFloat(uint32_t datapointId, float values[],
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_FLOAT,
-                        .dataId = datapointId, .data.floatVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_FLOAT, .dataId = datapointId,
+                        .data.floatVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -413,14 +464,12 @@ int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback)
   return err;
 }
 
-int datastoreReadUint(uint32_t datapointId, size_t valCount,
-                      struct k_msgq *response, uint32_t values[])
+int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_UINT,
-                        .dataId = datapointId, .data.uintVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_UINT, .dataId = datapointId,
+                        .data.uintVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -433,14 +482,12 @@ int datastoreReadUint(uint32_t datapointId, size_t valCount,
   return resStatus;
 }
 
-int datastoreWriteUint(uint32_t datapointId, uint32_t values[],
-                       size_t valCount, struct k_msgq *response)
+int datastoreWriteUint(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_UINT,
-                        .dataId = datapointId, .data.uintVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_UINT, .dataId = datapointId,
+                        .data.uintVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -533,14 +580,12 @@ int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback)
   return err;
 }
 
-int datastoreReadInt(uint32_t datapointId, size_t valCount,
-                     struct k_msgq *response, int32_t values[])
+int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *response, int32_t values[])
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_INT,
-                        .dataId = datapointId, .data.intVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_INT, .dataId = datapointId,
+                        .data.intVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -553,14 +598,12 @@ int datastoreReadInt(uint32_t datapointId, size_t valCount,
   return resStatus;
 }
 
-int datastoreWriteInt(uint32_t datapointId, int32_t values[],
-                      size_t valCount, struct k_msgq *response)
+int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_INT,
-                        .dataId = datapointId, .data.intVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_INT, .dataId = datapointId,
+                        .data.intVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -653,15 +696,12 @@ int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
   return err;
 }
 
-int datastoreReadMultiState(uint32_t datapointId, size_t valCount,
-                            struct k_msgq *response, uint32_t values[])
+int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_READ,
-                        .dataType = DATAPOINT_MULTI_STATE,
-                        .dataId = datapointId, .data.uintVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_MULTI_STATE, .dataId = datapointId,
+                        .data.uintVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -674,15 +714,12 @@ int datastoreReadMultiState(uint32_t datapointId, size_t valCount,
   return resStatus;
 }
 
-int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[],
-                             size_t valCount, struct k_msgq *response)
+int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE,
-                        .dataType = DATAPOINT_MULTI_STATE,
-                        .dataId = datapointId, .data.uintVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_MULTI_STATE, .dataId = datapointId,
+                        .data.uintVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -775,14 +812,12 @@ int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
   return err;
 }
 
-int datastoreReadButton(uint32_t datapointId, size_t valCount,
-                        struct k_msgq *response, uint32_t values[])
+int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_BUTTON,
-                        .dataId = datapointId, .data.uintVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .dataType = DATAPOINT_BUTTON, .dataId = datapointId,
+                        .data.uintVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -795,15 +830,12 @@ int datastoreReadButton(uint32_t datapointId, size_t valCount,
   return resStatus;
 }
 
-int datastoreWriteButton(uint32_t datapointId, uint32_t values[],
-                         size_t valCount, struct k_msgq *response)
+int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
   int resStatus = 0;
-  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE,
-                        .dataType = DATAPOINT_BUTTON,
-                        .dataId = datapointId, .data.uintVal = values,
-                        .valCount = valCount, .response = response };
+  DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .dataType = DATAPOINT_BUTTON, .dataId = datapointId,
+                        .data.uintVal = values, .valCount = valCount, .response = response };
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
@@ -817,5 +849,30 @@ int datastoreWriteButton(uint32_t datapointId, uint32_t values[],
   }
 
   return resStatus;
+}
+
+int datastoreReturnBuffer(DatapointData_t *buffer)
+{
+  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
+}
+
+int datastoreReturnUintBuffer(Uint32_t *buffer)
+{
+  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
+}
+
+int datastoreReturnIntBuffer(int32_t *buffer)
+{
+  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
+}
+
+int datastoreReturnMultiStateBuffer(Uint32_t *buffer)
+{
+  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
+}
+
+int datastoreReturnButtonBuffer(Uint32_t *buffer)
+{
+  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
 }
 /** @} */

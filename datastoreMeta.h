@@ -18,6 +18,13 @@
 
 #include <zephyr/kernel.h>
 
+#define DATASTORE_LOGGER_NAME datastore
+
+/**
+ * @brief   The message count in the datastore queue.
+ */
+#define DATASTORE_MSG_COUNT                                       (10)
+
 /**
  * @brief   Datapoint in NVM flag mask.
  */
