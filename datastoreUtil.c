@@ -70,54 +70,55 @@ static Datapoint_t buttons[] = {
 };
 
 /**
- * @brief   The float subscriptions.
+ * @brief   The list of datapoint for each data type.
  */
-static DatastoreFloatSub_t *floatSubs = NULL;
+static Datapoint_t **datapoints[DATAPOINT_TYPE_COUNT] = {floats, uints, ints, multiStates, buttons};
 
 /**
- * @brief   The float subscriptions count.
+ * @brief   The datapoint count of each data type.
  */
-static uint32_t floatSubCount = 0;
+static size_t datapointCounts[DATAPOINT_TYPE_COUNT] = {FLOAT_DATAPOINT_COUNT, UINT_DATAPOINT_COUNT, INT_DATAPOINT_COUNT,
+                                                       MULTI_STATE_DATAPOINT_COUNT, BUTTON_DATAPOINT_COUNT};
+
+/**
+ * @brief   The float subscriptions.
+ */
+static GenericSubscription_t *floatSubs = NULL;
 
 /**
  * @brief   The unsigned integer subscriptions.
  */
-static DatastoreUintSub_t *uintSubs = NULL;
-
-/**
- * @brief   The unsigned subscriptions count.
- */
-static uint32_t uintSubCount = 0;
+static GenericSubscription_t *uintSubs = NULL;
 
 /**
  * @brief   The signed integer subscriptions.
  */
-static DatastoreIntSub_t *intSubs = NULL;
-
-/**
- * @brief   The signed integer subscriptions count.
- */
-static uint32_t intSubCount = 0;
+static GenericSubscription_t *intSubs = NULL;
 
 /**
  * @brief   The multi-state subscriptions.
  */
-static DatastoreMultiStateSub_t multiStateSubs = NULL;
-
-/**
- * @brief   The multi-state subscriptions count.
- */
-static uint32_t multiStateSubCount = 0;
+static GenericSubscription_t *multiStateSubs = NULL;
 
 /**
  * @brief   The button subscriptions.
  */
-static DatastoreButtonSub_t buttonSubs = NULL;
+static GenericSubscription_t *buttonSubs = NULL;
 
 /**
- * @brief   The buttons subscriptions count.
+ * @brief   The list of subscription for each data type.
  */
-static uint32_t buttonSubCount = 0;
+static GenericSubscription_t *subscriptions[DATAPOINT_TYPE_COUNT] = {floatSubs, uintSubs, intSubs, multiStateSubs, buttonSubs};
+
+/**
+ * @brief   The maximum count of subscriptions for each data type.
+ */
+static size_t subMaxCounts[DATAPOINT_TYPE_COUNT] = {0};
+
+/**
+ * @brief   The count of subscriptions for each data type.
+ */
+static size_t subCounts[DATAPOINT_TYPE_COUNT] = {0};
 
 /**
  * @brief   The datastore buffer pool.
@@ -189,76 +190,40 @@ static inline bool isButtonDatapointInSubRange(uint32_t datapointId, DatastoreBu
   return datapointId >= sub->datapointId && datapointId < sub->valCount;
 }
 
-int datastoreUtilAllocateFloatSubs(size_t maxSubCount)
+/**
+ * @brief   Check if the datapoint ID and the value count are valid.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The value count.
+ * @param[in]   datapointCount: The datapoint count.
+ *
+ * @return  true if the datapoint ID and value count are valid, false otherwise.
+ */
+static inline bool isDatapointIdAndValCountValid(uint32_t datapointId, size_t valCount, size_t datapointCount)
+{
+  return datapointId >= datapointCount && datapointId + valCount >= datapointCount;
+}
+
+int datastoreUtilAllocateSubs(DatapointType_t datapointType, size_t maxSubCount)
 {
   int err;
+  GenericSubscription_t *subs;
 
-  floatSubs = k_malloc(maxSubs->maxFloatSubs * sizeof(DatastoreFloatSub_t));
+  if(datapointType >= DATAPOINT_TYPE_COUNT)
+  {
+    err = -ENOTSUP;
+    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    return err;
+  }
+
+  subs = subscriptions[datapointType];
+  subMaxCounts[datapointType] = maxSubCount;
+
+  subs = k_malloc(maxSubCount * sizeof(GenericSubscription_t));
   if(!floatSubs)
   {
     err = -ENOSPC;
     LOG_ERR("ERROR %d: unable to allocate memory for float subscription", err);
-    return err;
-  }
-
-  return 0;
-}
-
-int datastoreUtilAllocateUintSubs(size_t maxSubCount)
-{
-  int err;
-
-  uintSubs = k_malloc(maxSubs->maxUintSubs * sizeof(DatastoreUintSub_t));
-  if(!uintSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for unsigned integer subscription", err);
-    k_free(floatSubs);
-    return err;
-  }
-
-  return 0;
-}
-
-int datastoreUtilAllocateIntSubs(size_t maxSubCount)
-{
-  int err;
-
-  intSubs = k_malloc(maxSubs->maxIntSubs * sizeof(DatastoreIntSub_t));
-  if(!intSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for signed integer subscription", err);
-    return err;
-  }
-
-  return 0;
-}
-
-int datastoreUtilAllocateMultiStateSubs(size_t maxSubCount)
-{
-  int err;
-
-  multiStateSubs = k_malloc(maxSubs->maxMultiStateSubs * sizeof(DatastoreMultiStateSub_t));
-  if(!multiStateSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for multi-state subscription", err);
-    return err;
-  }
-
-  return 0;
-}
-
-int datastoreUtilAllocateButtonSubs(size_t maxSubCount)
-{
-  int err;
-
-  buttonSubs = k_malloc(maxSubs->maxButtonSubs * sizeof(DatastoreButtonSub_t));
-  if(!buttonSubs)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate memory for button subscription", err);
     return err;
   }
 
@@ -290,210 +255,219 @@ int datastoreUtilInitBufferPool(DatastoreMaxSubs_t *maxSubs)
 int datastoreUtilDoInitNotifications(void)
 {
   int err;
+  GenericSubscription_t *subs;
+  size_t subCount;
   DatapointData_t *buffer;
 
-  for(size_t i = 0; i < floatSubCount; i++)
+  for(uint32_t i = 0; i < DATAPOINT_TYPE_COUNT; i++)
   {
-    if(!floatSubs[i].isPaused)
+    subs = subscriptions[i];
+    subCount = subCounts[i];
+
+    for(uint32_t i = 0; i < subCount; ++i)
     {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
+      if(!subs[i].isPaused)
+      {
+        buffer = datastoreBufPoolGet(bufPool);
+        if(!buffer)
+          return -ENOSPC;
 
-      for(uint32_t j = floatSubs[i].datapointId; j < floatSubs[i].valCount; j++)
-        buffer[j - floatSubs[i].datapointId] = floats[j];
+        for(uint32_t j = subs[i].datapointId; j < subs[i].datapointId + subs[i].valCount; ++j)
+          buffer[j - subs[i].datapointId] = floats[j];
 
-      err = floatSubs[i].callback((float *)buffer, floatSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < uintSubCount; i++)
-  {
-    if(!uintSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = uintSubs[i].datapointId; j < uintSubs[i].valCount; j++)
-        buffer[j - uintSubs[i].datapointId] = uints[j];
-
-      err = uintSubs[i].callback((float *)buffer, uintSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < intSubCount; i++)
-  {
-    if(!intSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = intSubs[i].datapointId; j < intSubs[i].valCount; j++)
-        buffer[j - intSubs[i].datapointId] = ints[j];
-
-      err = intSubs[i].callback((float *)buffer, intSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < multiStateSubCount; i++)
-  {
-    if(!multiStateSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = multiStateSubs[i].datapointId; j < multiStateSubs[i].valCount; j++)
-        buffer[j - multiStateSubs[i].datapointId] = multiStates[j];
-
-      err = multiStateSubs[i].callback((float *)buffer, multiStateSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < buttonSubCount; i++)
-  {
-    if(!buttonSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = buttonSubs[i].datapointId; j < buttonSubs[i].valCount; j++)
-        buffer[j - buttonSubs[i].datapointId] = buttons[j];
-
-      err = buttonSubs[i].callback((float *)buffer, buttonSubs[i].valCount);
-      if(err < 0)
-        return err;
+        err = subs[i].callback(buffer, subs[i].valCount);
+        if(err < 0)
+          return err;
+      }
     }
   }
 
   return 0;
 }
 
-int datastoreUtilNotifyFloat(uint32_t datapointId, DatapointFloatSub_t *subs, size_t subCount, DatastoreBufferPool_t *bufPool)
+int datastoreUtilAddSubscription(DatapointType_t datapointType, GenericSubscription_t *sub)
 {
   int err;
+
+  if(datapointType >= DATAPOINT_TYPE_COUNT)
+  {
+    err = -ENOTSUP;
+    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    return err;
+  }
+
+  if(!subscriptions[datapointType])
+  {
+    err = -EACCES;
+    LOG_ERR("ERROR %d: subscription records not initialized", err);
+    return err;
+  }
+
+  if(subCounts[datapointType] + 1 >= subMaxCounts[datapointType])
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: no more free float subscription record", err);
+    return err;
+  }
+
+  if(!sub)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid new float subscription record", err);
+    return err;
+  }
+
+  memcpy(subscriptions[datapointType] + subCounts[datapointType], sub, sizeof(GenericSubscription_t));
+  ++subCounts[datapointType];
+
+  return 0;
+}
+
+int datastoreUtilPauseSubscription(DatapointType_t datapointType, NotifyCallback_t callback)
+{
+  int err = -ESRCH;
+  GenericSubscription_t *subs;
+
+  if(datapointType >= DATAPOINT_TYPE_COUNT)
+  {
+    err = -ENOTSUP;
+    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    return err;
+  }
+
+  if(!callback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  subs = subscriptions[datapointType];
+
+  for(uint32_t i = 0; i < subCounts[datapointType]; ++i)
+  {
+    if(subs[i].callback == callback)
+    {
+      err = 0;
+      subs[i].isPaused = true;
+    }
+  }
+
+  return err;
+}
+
+int datastoreUtilUnpauseSubscription(DatapointType_t datapointType, NotifyCallback_t callback)
+{
+  int err = -ESRCH;
+  GenericSubscription_t *subs;
+
+  if(datapointType >= DATAPOINT_TYPE_COUNT)
+  {
+    err = -ENOTSUP;
+    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    return err;
+  }
+
+  if(!callback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  subs = subscriptions[datapointType];
+
+  for(uint32_t i = 0; i < subCounts[datapointType]; ++i)
+  {
+    if(subs[i].callback == callback)
+    {
+      err = 0;
+      subs[i].isPaused = false;
+    }
+  }
+
+  return err;
+}
+
+int datastoreUtilNotify(DatapointType_t datapointType, uint32_t datapointId)
+{
+  int err;
+  GenericSubscription_t *subs;
   DatapointData_t *buffer = NULL;
 
-  for(size_t i = 0; i < subCount; i++)
+  if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
-    if(isFloatDatapointInSubRange(datapointId, subs + i) && !subs[i].isPaused)
+    err = -ENOTSUP;
+    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    return err;
+  }
+
+  subs = subscriptions[datapointType];
+
+  for(size_t i = 0; i < subCounts[datapointType]; ++i)
+  {
+    if(isFloatDatapointInSubRange(datapointId, subscriptions[datapointType] + i) && !subscriptions[datapointType][i].isPaused)
     {
       buffer = datastoreBufPoolGet(bufPool);
       if(!buffer)
         return -ENOSPC;
 
-      for(uint32_t j = subs[i].datapointId; j < subs[i].valCount; j++)
-        buffer[j - subs[i].datapointId].floatVal = floats[j].floatVal;
+      for(uint32_t j = subs[i].datapointId; j < subs[i].datapointId + subs[i].valCount; ++j)
+        buffer[j - subs[i].datapointId] = floats[j];
 
-      err = subs[i].callback((float *)buffer, subs[i].valCount);
+      err = subs[i].callback(buffer, subs[i].valCount);
       if(err < 0)
         return err;
     }
   }
 }
 
-int datastoreUtilNotifyUint(uint32_t datapointId, DatapointUintSub_t *subs, size_t subCount, DatastoreBufferPool_t *bufPool)
+int datastoreUtilReadData(DatapointType_t datapointType, uint32_t datapointId, size_t valCount, DatapointData_t values[])
 {
   int err;
-  DatapointData_t *buffer = NULL;
 
-  for(size_t i = 0; i < subCount; i++)
+  if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
-    if(isFloatDatapointInSubRange(datapointId, subs + i) && !subs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = subs[i].datapointId; j < subs[i].valCount; j++)
-        buffer[j - subs[i].datapointId].uintVal = floats[j].uintVal;
-
-      err = subs[i].callback((float *)buffer, subs[i].valCount);
-      if(err < 0)
-        return err;
-    }
+    err = -ENOTSUP;
+    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    return err;
   }
+
+  if(isDatapointIdAndValCountValid(datapointId, valCount, datapointCounts[datapointType]))
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: reading more data than available", err);
+    return err;
+  }
+
+  for(uint32_t i = datapointId; i < datapointId + valCount; ++i)
+    values[i] = datapoints[datapointType][i];
+
+  return 0;
 }
 
-int datastoreUtilNotifyInt(uint32_t datapointId, DatapointIntSub_t *subs, size_t subCount, DatastoreBufferPool_t *bufPool)
+int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId, DatapointData_t values[], size_t valCount)
 {
   int err;
-  DatapointData_t *buffer = NULL;
 
-  for(size_t i = 0; i < subCount; i++)
+  if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
-    if(isFloatDatapointInSubRange(datapointId, subs + i) && !subs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = subs[i].datapointId; j < subs[i].valCount; j++)
-        buffer[j - subs[i].datapointId].intVal = floats[j].intVal;
-
-      err = subs[i].callback((float *)buffer, subs[i].valCount);
-      if(err < 0)
-        return err;
-    }
+    err = -ENOTSUP;
+    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    return err;
   }
-}
 
-int datastoreUtilNotifyMultiState(uint32_t datapointId, DatapointMultiStateSub_t *subs,
-                                  size_t subCount, DatastoreBufferPool_t *bufPool)
-{
-  int err;
-  DatapointData_t *buffer = NULL;
-
-  for(size_t i = 0; i < subCount; i++)
+  if(isDatapointIdAndValCountValid(datapointId, valCount, datapointCounts[datapointType]))
   {
-    if(isFloatDatapointInSubRange(datapointId, subs + i) && !subs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = subs[i].datapointId; j < subs[i].valCount; j++)
-        buffer[j - subs[i].datapointId].uintVal = floats[j].uintVal;
-
-      err = subs[i].callback((float *)buffer, subs[i].valCount);
-      if(err < 0)
-        return err;
-    }
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: writing more data than available", err);
+    return err;
   }
-}
 
-int datastoreUtilNotifyButton(uint32_t datapointId, DatapointButtonSub_t *subs, size_t subCount, DatastoreBufferPool_t *bufPool)
-{
-  int err;
-  DatapointData_t *buffer = NULL;
+  for(uint32_t i = datapointId; i < datapointId + valCount; ++i)
+    datapoints[datapointType][i] = values[i];
 
-  for(size_t i = 0; i < subCount; i++)
-  {
-    if(isFloatDatapointInSubRange(datapointId, subs + i) && !subs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = subs[i].datapointId; j < subs[i].valCount; j++)
-        buffer[j - subs[i].datapointId].uintVal = floats[j].uintVal;
-
-      err = subs[i].callback((float *)buffer, subs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
+  return 0;
 }
 
 /** @} */
