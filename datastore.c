@@ -60,104 +60,6 @@ static Datapoint_t **datapoints[] = {floats, uints, ints, multiStates, buttons};
 K_MSGQ_DEFINE(datastoreQueue, sizeof(DatastoreMsg_t), DATASTORE_MSG_COUNT, 4);
 
 /**
- * @brief   Do the initial notifications.
- *
- * @return  0 if successful, the error code otherwise.
- */
-static int doInitialNotifications(void)
-{
-  int err;
-  DatapointData_t *buffer;
-
-  for(size_t i = 0; i < floatSubCount; i++)
-  {
-    if(!floatSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = floatSubs[i].datapointId; j < floatSubs[i].valCount; j++)
-        buffer[j - floatSubs[i].datapointId] = floats[j];
-
-      err = floatSubs[i].callback((float *)buffer, floatSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < uintSubCount; i++)
-  {
-    if(!uintSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = uintSubs[i].datapointId; j < uintSubs[i].valCount; j++)
-        buffer[j - uintSubs[i].datapointId] = uints[j];
-
-      err = uintSubs[i].callback((float *)buffer, uintSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < intSubCount; i++)
-  {
-    if(!intSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = intSubs[i].datapointId; j < intSubs[i].valCount; j++)
-        buffer[j - intSubs[i].datapointId] = ints[j];
-
-      err = intSubs[i].callback((float *)buffer, intSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < multiStateSubCount; i++)
-  {
-    if(!multiStateSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = multiStateSubs[i].datapointId; j < multiStateSubs[i].valCount; j++)
-        buffer[j - multiStateSubs[i].datapointId] = multiStates[j];
-
-      err = multiStateSubs[i].callback((float *)buffer, multiStateSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  for(size_t i = 0; i < buttonSubCount; i++)
-  {
-    if(!buttonSubs[i].isPaused)
-    {
-      buffer = datastoreBufPoolGet(bufPool);
-      if(!buffer)
-        return -ENOSPC;
-
-      for(uint32_t j = buttonSubs[i].datapointId; j < buttonSubs[i].valCount; j++)
-        buffer[j - buttonSubs[i].datapointId] = buttons[j];
-
-      err = buttonSubs[i].callback((float *)buffer, buttonSubs[i].valCount);
-      if(err < 0)
-        return err;
-    }
-  }
-
-  return 0;
-}
-
-/**
  * @brief   The datastore service thread function.
  *
  * @param[in]   p1: Thread first parameter.
@@ -172,7 +74,7 @@ static void run(void *p1, void *p2, void *p3)
 
   // TODO: Initialize the datapoints from the NVM.
 
-  err = doInitialNotifications();
+  err = datastoreUtilNotifyFloat();
   if(err < 0)
     LOG_ERR("ERROR %d: unable to make initial notifications", err);
 

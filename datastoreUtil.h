@@ -74,6 +74,13 @@ int datastoreUtilAllocateButtonSubs(size_t maxSubCount);
 int datastoreUtilInitBufferPool(DatastoreMaxSubs_t *maxSubs);
 
 /**
+ * @brief   Do the initial notifications.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilDoInitNotifications(void);
+
+/**
  * @brief   Notify for a specific float datapoint.
  *
  * @param[in]   datapointId: The datapoint id.

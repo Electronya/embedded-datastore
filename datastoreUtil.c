@@ -287,6 +287,99 @@ int datastoreUtilInitBufferPool(DatastoreMaxSubs_t *maxSubs)
   return 0;
 }
 
+int datastoreUtilDoInitNotifications(void)
+{
+  int err;
+  DatapointData_t *buffer;
+
+  for(size_t i = 0; i < floatSubCount; i++)
+  {
+    if(!floatSubs[i].isPaused)
+    {
+      buffer = datastoreBufPoolGet(bufPool);
+      if(!buffer)
+        return -ENOSPC;
+
+      for(uint32_t j = floatSubs[i].datapointId; j < floatSubs[i].valCount; j++)
+        buffer[j - floatSubs[i].datapointId] = floats[j];
+
+      err = floatSubs[i].callback((float *)buffer, floatSubs[i].valCount);
+      if(err < 0)
+        return err;
+    }
+  }
+
+  for(size_t i = 0; i < uintSubCount; i++)
+  {
+    if(!uintSubs[i].isPaused)
+    {
+      buffer = datastoreBufPoolGet(bufPool);
+      if(!buffer)
+        return -ENOSPC;
+
+      for(uint32_t j = uintSubs[i].datapointId; j < uintSubs[i].valCount; j++)
+        buffer[j - uintSubs[i].datapointId] = uints[j];
+
+      err = uintSubs[i].callback((float *)buffer, uintSubs[i].valCount);
+      if(err < 0)
+        return err;
+    }
+  }
+
+  for(size_t i = 0; i < intSubCount; i++)
+  {
+    if(!intSubs[i].isPaused)
+    {
+      buffer = datastoreBufPoolGet(bufPool);
+      if(!buffer)
+        return -ENOSPC;
+
+      for(uint32_t j = intSubs[i].datapointId; j < intSubs[i].valCount; j++)
+        buffer[j - intSubs[i].datapointId] = ints[j];
+
+      err = intSubs[i].callback((float *)buffer, intSubs[i].valCount);
+      if(err < 0)
+        return err;
+    }
+  }
+
+  for(size_t i = 0; i < multiStateSubCount; i++)
+  {
+    if(!multiStateSubs[i].isPaused)
+    {
+      buffer = datastoreBufPoolGet(bufPool);
+      if(!buffer)
+        return -ENOSPC;
+
+      for(uint32_t j = multiStateSubs[i].datapointId; j < multiStateSubs[i].valCount; j++)
+        buffer[j - multiStateSubs[i].datapointId] = multiStates[j];
+
+      err = multiStateSubs[i].callback((float *)buffer, multiStateSubs[i].valCount);
+      if(err < 0)
+        return err;
+    }
+  }
+
+  for(size_t i = 0; i < buttonSubCount; i++)
+  {
+    if(!buttonSubs[i].isPaused)
+    {
+      buffer = datastoreBufPoolGet(bufPool);
+      if(!buffer)
+        return -ENOSPC;
+
+      for(uint32_t j = buttonSubs[i].datapointId; j < buttonSubs[i].valCount; j++)
+        buffer[j - buttonSubs[i].datapointId] = buttons[j];
+
+      err = buttonSubs[i].callback((float *)buffer, buttonSubs[i].valCount);
+      if(err < 0)
+        return err;
+    }
+  }
+
+  return 0;
+}
+
 int datastoreUtilNotifyFloat(uint32_t datapointId, DatapointFloatSub_t *subs, size_t subCount, DatastoreBufferPool_t *bufPool)
 {
   int err;
