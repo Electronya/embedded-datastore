@@ -323,7 +323,7 @@ int datastoreUtilAddSubscription(DatapointType_t datapointType, GenericSubscript
   return 0;
 }
 
-int datastoreUtilPauseSubscription(DatapointType_t datapointType, NotifyCallback_t callback)
+int datastoreUtilPauseSubscription(DatapointType_t datapointType, GenericCallback_t callback)
 {
   int err = -ESRCH;
   GenericSubscription_t *subs;
@@ -356,7 +356,7 @@ int datastoreUtilPauseSubscription(DatapointType_t datapointType, NotifyCallback
   return err;
 }
 
-int datastoreUtilUnpauseSubscription(DatapointType_t datapointType, NotifyCallback_t callback)
+int datastoreUtilUnpauseSubscription(DatapointType_t datapointType, GenericCallback_t callback)
 {
   int err = -ESRCH;
   GenericSubscription_t *subs;
@@ -446,7 +446,8 @@ int datastoreUtilReadData(DatapointType_t datapointType, uint32_t datapointId, s
   return 0;
 }
 
-int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId, DatapointData_t values[], size_t valCount)
+int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId,
+                           DatapointData_t values[], size_t valCount, bool *needToNotify)
 {
   int err;
 
@@ -464,8 +465,16 @@ int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId, 
     return err;
   }
 
+  *needToNotify = false;
+
   for(uint32_t i = datapointId; i < datapointId + valCount; ++i)
-    datapoints[datapointType][i] = values[i];
+  {
+    if(datapoints[datapointType][i] != values[i])
+    {
+      datapoints[datapointType][i] = values[i];
+      *needToNotify = true;
+    }
+  }
 
   return 0;
 }

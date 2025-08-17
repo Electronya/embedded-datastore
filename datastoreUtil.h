@@ -20,16 +20,24 @@
 #include "datastoreBufferPool.h"
 
 /**
+ * @brief   The generic return buffer function.
+ */
+typedef int (*GenericReturnBuffer_t)(DatapointData_t *buffer);
+
+/**
  * @brief   The generic notifier callback.
  */
-typedef int (*NotifyCallback_t)(DatapointData_t values[], size_t valCount);
+typedef int (*GenericCallback_t)(DatapointData_t values[], size_t valCount);
 
+/**
+ * @brief   The generic subscription record.
+ */
 typedef struct
 {
   uint32_t datapointId;                 /**< The datapoint ID */
   size_t valCount;                      /**< The datapoint count */
   bool isPaused;                        /**< The paused subscription flag */
-  NotifyCallback_t callback;            /**< The subscription callback */
+  GenericCallback_t callback;           /**< The subscription callback */
 } GenericSubscription_t
 
 /**
@@ -76,7 +84,7 @@ int datastoreUtilAddSubscription(DatapointType_t datapointType, GenericSubscript
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilPauseSubscription(DatapointType_t datapointType, NotifyCallback_t callback);
+int datastoreUtilPauseSubscription(DatapointType_t datapointType, GenericCallback_t callback);
 
 /**
  * @brief   Unpause a subscription.
@@ -86,7 +94,7 @@ int datastoreUtilPauseSubscription(DatapointType_t datapointType, NotifyCallback
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilUnpauseSubscription(DatapointType_t datapointType, NotifyCallback_t callback);
+int datastoreUtilUnpauseSubscription(DatapointType_t datapointType, GenericCallback_t callback);
 
 /**
  * @brief   Notify for a specific datapoint.
@@ -117,10 +125,12 @@ int datastoreUtilReadData(DatapointType_t datapointType, uint32_t datapointId, s
  * @param[in]   datapointId: The datapoint ID.
  * @param[in]   values: The values.
  * @param[in]   valCount: The values count.
+ * @param[out]  needToNotify: The need to notify flag.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId, DatapointData_t values[], size_t valCount);
+int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId,
+                           DatapointData_t values[], size_t valCount, bool *needToNotify);
 
 #endif    /* DATASTORE_SRV_UTIL */
 

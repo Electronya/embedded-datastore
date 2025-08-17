@@ -81,41 +81,54 @@ enum ButtonDatapoint
 };
 
 /**
- * @brief   Maximum subscriptions allowed for each datatype.
+ * @brief   The return float buffer function.
  */
-typedef struct
-{
-  size_t maxFloatSubs;            /**< Maximum float subscriptions */
-  size_t maxUintSubs;             /**< Maximum unsigned integer subscriptions */
-  size_t maxIntSubs;              /**< Maximum signed integer subscriptions */
-  size_t maxMultiStateSubs;       /**< Maximum multi-state subscriptions */
-  size_t maxButtonSubs;           /**< Maximum button subscriptions */
-} DatastoreMaxSubs_t;
+typedef int (*DatastoreReturnFloatBuf_t)(float *buffer);
 
 /**
  * @brief   The float subscription callback.
  */
-typedef int (*DatastoreFloatSubCb_t)(float values[], size_t *valCount);
+typedef int (*DatastoreFloatSubCb_t)(float values[], size_t *valCount, DatastoreReturnFloatBuf_t returnBuffer);
+
+/**
+ * @brief   The return unsigned integer buffer function.
+ */
+typedef int (*DatastoreReturnUintBuf_t)(uint32_t *buffer);
 
 /**
  * @brief   The unsigned integer subscription callback.
  */
-typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t *valCount);
+typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t *valCount, DatastoreReturnUintBuf_t returnBuffer);
+
+/**
+ * @brief   The return signed integer buffer function.
+ */
+typedef int (*DatastoreReturnIntBuf_t)(int32_t *buffer);
 
 /**
  * @brief   The signed integer subscription callback.
  */
-typedef int (*DatastoreIntSubCb_t)(int32_t values[], size_t *valCount);
+typedef int (*DatastoreIntSubCb_t)(int32_t values[], size_t *valCount, DatastoreReturnIntBuf_t returnBuffer);
+
+/**
+ * @brief   The return multi-state buffer function.
+ */
+typedef int (*DatastoreReturnMultiStateBuf_t)(uint32_t *buffer);
 
 /**
  * @brief   The multi-state subscription callback.
  */
-typedef int (*DatastoreMultiStateSubCb_t)(uint32_t values[], size_t *valCount);
+typedef int (*DatastoreMultiStateSubCb_t)(uint32_t values[], size_t *valCount, DatastoreReturnMultiStateBuf_t returnBuffer);
+
+/**
+ * @brief   The return button buffer function.
+ */
+typedef int (*DatastoreReturnButtonBuf_t)(uint32_t *buffer);
 
 /**
  * @brief   The button subscription callback.
  */
-typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t *valCount);
+typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t *valCount, DatastoreReturnButtonBuf_t returnBuffer);
 
 /**
  * @brief   The float subscription record.
@@ -182,7 +195,7 @@ typedef struct
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreInit(DatastoreMaxSubs_t *maxSubs, size_t maxBufferSize, uint32_t priority, k_tid_t *threadId);
+int datastoreInit(size_t maxSubs[DATAPOINT_TYPE_COUNT], size_t maxBufferSize, uint32_t priority, k_tid_t *threadId);
 
 /**
  * @brief   Subscribe to float datapoint.
