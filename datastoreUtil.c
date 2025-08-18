@@ -422,6 +422,11 @@ int datastoreUtilNotify(DatapointType_t datapointType, uint32_t datapointId)
   }
 }
 
+Datapoint_t *datastoreUtilGetBuffer(void)
+{
+  return datastoreBufPoolGet(bufPool);
+}
+
 int datastoreUtilReadData(DatapointType_t datapointType, uint32_t datapointId, size_t valCount, DatapointData_t values[])
 {
   int err;

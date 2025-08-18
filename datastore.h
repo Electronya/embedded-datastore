@@ -198,6 +198,34 @@ typedef struct
 int datastoreInit(size_t maxSubs[DATAPOINT_TYPE_COUNT], size_t maxBufferSize, uint32_t priority, k_tid_t *threadId);
 
 /**
+ * @brief   Read a datapoint.
+ *
+ * @param[in]   datapointType: The datapoint type.
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The count of value to read.
+ * @param[in]   response: The response queue.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreRead(DatapointType_t datapointType, uint32_t datapointId, size_t valCount,
+                  struct k_msgq *response, Datapoint_t values[]);
+
+/**
+ * @brief   Write a datapoint
+ *
+ * @param[in]   datapointType: The datapoint type.
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
+                   Datapoint_t values[], size_t valCount, struct k_msgq *response);
+
+/**
  * @brief   Subscribe to float datapoint.
  *
  * @param[in]   sub: The subscription.
