@@ -174,7 +174,6 @@ static int execListDatapoint(const struct shell *shell, size_t argc, char **argv
   DatapointType_t type;
 
   ARG_UNUSED(argc);
-  ARG_UNUSED(argv);
 
   err = getStringIndex(argv[1], typeNames, DATAPOINT_TYPE_COUNT, (uint32_t *)&type);
   if(err < 0)
@@ -193,7 +192,7 @@ static int execListDatapoint(const struct shell *shell, size_t argc, char **argv
 }
 
 /**
- * @brief   Execute the list datapoints command.
+ * @brief   Execute the read datapoints command.
  *
  * @param[in]   shell: The shell handle.
  * @param[in]   argc: The count of argument.
@@ -211,7 +210,6 @@ static int execReadDatapoint(const struct shell *shell, size_t argc, char **argv
   char valueStr[DATASTORE_CMD_VALUE_STR_LENGTH + 1] = {'\0'};
 
   ARG_UNUSED(argc);
-  ARG_UNUSED(argv);
 
   err = getStringIndex(argv[1], typeNames, DATAPOINT_TYPE_COUNT, (uint32_t *)&type);
   if(err < 0)
@@ -245,6 +243,57 @@ static int execReadDatapoint(const struct shell *shell, size_t argc, char **argv
   return 0;
 }
 
+/**
+ * @brief   Execute the write datapoints command.
+ *
+ * @param[in]   shell: The shell handle.
+ * @param[in]   argc: The count of argument.
+ * @param[in]   argv: The vector of argument.
+ *
+ * @return  0 if successful the error code otherwise.
+ */
+static int execWriteDatapoint(const struct shell *shell, size_t argc, char **argv)
+{
+  int err;
+  size_t datapointCount;
+  DatapointType_t type;
+  uint32_t datapointId;
+  Datapoint_t value;
+
+  ARG_UNUSED(argc);
+
+  err = getStringIndex(argv[1], typeNames, DATAPOINT_TYPE_COUNT, (uint32_t *)&type);
+  if(err < 0)
+  {
+    shell_error(shell, "FAIL: unknown datapoint type (%s)", argv[1]);
+    shell_help(shell);
+    return err;
+  }
+
+  toUpper(argv[2]);
+
+  err = getStringIndex(argv[2], datapointNames[type], datapointCounts[type], &datapointId);
+  if(err < 0)
+  {
+    shell_error(shell, "FAIL: unknown datapoint name %s of type %s", argv[2], argv[1]);
+    shell_help(shell);
+    return err;
+  }
+
+  // TODO: value conversion from string
+
+  err = dataStoreWrite(type, datapointId, 1, &datastoreCmdResQueue, &value);
+  if(err < 0)
+  {
+    shell_error(shell, "FAIL: error %d writing datapoint %s of type %s", err, argv[2], argv[1]);
+    return err;
+  }
+
+  shell_info(shell, "SUCCESS: %s = %s", argv[2], argv[3]);
+
+  return 0;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(datastore_sub,
 	SHELL_CMD(ls_types, NULL, "List the datapoint types.\n\tUsage: datastore ls_types", execListTypes),
   SHELL_CMD_ARG(ls, NULL, "List the datapoints of a type.\n\tUsage: datastore ls <float|uint|int|multi-state|button>",
@@ -252,7 +301,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(datastore_sub,
 	SHELL_CMD_ARG(read, NULL, "Read a datapoint.\n\tUsage: datastore read <float|uint|int|multi-state|button> <datapoint_name>",
                 execReadDatapoint, 2, 0),
 	SHELL_CMD_ARG(write, NULL, "Write a datapoint.\n\tUsage: datastore read <float|uint|int|multi-state|button> <datapoint_name>",
-                execWriteDatapoint, 2, 0),
+                execWriteDatapoint, 3, 0),
 	SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(datastore, &datastore_sub, APP_CMD_USAGE,	NULL);
 
