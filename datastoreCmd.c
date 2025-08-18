@@ -15,6 +15,7 @@
 #include <zephyr/shell/shell.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "datastore.h"
@@ -159,6 +160,44 @@ static int execListTypes(const struct shell *shell, size_t argc, char **argv)
 }
 
 /**
+ * @brief   Convert value from string.
+ *
+ * @param[in]   datapointType: The datapoint type.
+ * @param[in]   str: The value as string to convert.
+ * @param[out]  value: The converted value.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static int convertValueFromString(DatapointType_t datapointType, char *str, DatapointData_t *value)
+{
+  int err;
+  char *endPtr;
+
+  switch(datapointType)
+  {
+    case DATAPOINT_FLOAT:
+      value->floatVal = strtof(str, endPtr);
+    break;
+    case DATAPOINT_INT:
+      value->intVal = strtol(str, endPtr);
+    break;
+    case DATAPOINT_UINT:
+    case DATAPOINT_MULTI_STATE:
+    case DATAPOINT_BUTTON:
+      value->uintVal = strtoul(str, endPtr);
+    break;
+    default:
+      return -ENOTSUP;
+    break;
+  }
+
+  if(endPtr != str + strlen(str))
+    err = value->intVal;
+
+  return err;
+}
+
+/**
  * @brief   Execute the list datapoints command.
  *
  * @param[in]   shell: The shell handle.
@@ -258,7 +297,7 @@ static int execWriteDatapoint(const struct shell *shell, size_t argc, char **arg
   size_t datapointCount;
   DatapointType_t type;
   uint32_t datapointId;
-  Datapoint_t value;
+  DatapointData_t value;
 
   ARG_UNUSED(argc);
 
@@ -280,7 +319,13 @@ static int execWriteDatapoint(const struct shell *shell, size_t argc, char **arg
     return err;
   }
 
-  // TODO: value conversion from string
+  err = convertValueFromString(type, argv[3], &value);
+  if(err < 0)
+  {
+    shell_erro(shell, "FAIL: error %d converting the datapoint %s value of %s", err, argv[2], argv[3]);
+    shell_help(shell);
+    return err;
+  }
 
   err = dataStoreWrite(type, datapointId, 1, &datastoreCmdResQueue, &value);
   if(err < 0)
