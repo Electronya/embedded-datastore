@@ -20,6 +20,26 @@
 LOG_MODULE_REGISTER(DATASTORE_LOGGER_NAME);
 
 /**
+ * @brief   Binary datapoints.
+ * @note    Data is coming from X-macros in datastoreMeta.h
+ */
+static Datapoint_t binaries[] = {
+#define X(name, flags, defaultVal) {.data.uintVal = defaultVal, .flags = flags}
+  DATASTORE_BINARY_DATAPOINTS
+#undef
+};
+
+/**
+ * @brief   Button datapoints.
+ * @note    Data is coming from X-macros in datastoreMeta.h
+ */
+static Datapoint_t buttons[] = {
+#define X(name, flags, defaultVal) {.data.uintVal = defaultVal, .flags = flags}
+  DATASTORE_BUTTON_DATAPOINTS
+#undef
+};
+
+/**
  * @brief   Float datapoints.
  * @note    Data is coming from X-macros in datastoreMeta.h
  */
@@ -30,22 +50,12 @@ static Datapoint_t floats[] = {
 };
 
 /**
- * @brief   Unsigned integer datapoints.
- * @note    Data is coming from X-macros in datastoreMeta.h
- */
-static Datapoint_t uints[] = {
-#define X(name, flags, defaultVal) {.data.uintVal = defaultVal, .flags = flags}
-  DATASTORE_UINT_DATAPOINTS
-#undef
-};
-
-/**
  * @brief   Singed integer datapoints.
  * @note    Data is coming from X-macros in datastoreMeta.h
  */
 static Datapoint_t ints[] = {
 #define X(name, flags, defaultVal) {.data.intVal = defaultVal, .flags = flags}
-  DATASTORE_FLOAT_DATAPOINTS
+  DATASTORE_INT_DATAPOINTS
 #undef
 };
 
@@ -60,25 +70,35 @@ static Datapoint_t multiStates[] = {
 };
 
 /**
- * @brief   Button datapoints.
+ * @brief   Unsigned integer datapoints.
  * @note    Data is coming from X-macros in datastoreMeta.h
  */
-static Datapoint_t buttons[] = {
+static Datapoint_t uints[] = {
 #define X(name, flags, defaultVal) {.data.uintVal = defaultVal, .flags = flags}
-  DATASTORE_FLOAT_DATAPOINTS
+  DATASTORE_UINT_DATAPOINTS
 #undef
 };
 
 /**
- * @brief   The list of datapoint for each data type.
+ * @brief   The list of datapoint for each value type.
  */
-static Datapoint_t **datapoints[DATAPOINT_TYPE_COUNT] = {floats, uints, ints, multiStates, buttons};
+static Datapoint_t **datapoints[DATAPOINT_TYPE_COUNT] = {binaries, buttons, floats, ints, multiStates, uints};
 
 /**
- * @brief   The datapoint count of each data type.
+ * @brief   The datapoint count of each value type.
  */
 static size_t datapointCounts[DATAPOINT_TYPE_COUNT] = {FLOAT_DATAPOINT_COUNT, UINT_DATAPOINT_COUNT, INT_DATAPOINT_COUNT,
                                                        MULTI_STATE_DATAPOINT_COUNT, BUTTON_DATAPOINT_COUNT};
+
+/**
+ * @brief   The binary subscriptions.
+ */
+static GenericSubscription_t *binarySubs = NULL;
+
+/**
+ * @brief   The button subscriptions.
+ */
+static GenericSubscription_t *buttonSubs = NULL;
 
 /**
  * @brief   The float subscriptions.
@@ -101,22 +121,17 @@ static GenericSubscription_t *intSubs = NULL;
 static GenericSubscription_t *multiStateSubs = NULL;
 
 /**
- * @brief   The button subscriptions.
+ * @brief   The list of subscription for each value type.
  */
-static GenericSubscription_t *buttonSubs = NULL;
+static GenericSubscription_t *subscriptions[DATAPOINT_TYPE_COUNT] = {binarySubs, buttonSubs, floatSubs, intSubs, multiStateSubs, uintSubs};
 
 /**
- * @brief   The list of subscription for each data type.
- */
-static GenericSubscription_t *subscriptions[DATAPOINT_TYPE_COUNT] = {floatSubs, uintSubs, intSubs, multiStateSubs, buttonSubs};
-
-/**
- * @brief   The maximum count of subscriptions for each data type.
+ * @brief   The maximum count of subscriptions for each value type.
  */
 static size_t subMaxCounts[DATAPOINT_TYPE_COUNT] = {0};
 
 /**
- * @brief   The count of subscriptions for each data type.
+ * @brief   The count of subscriptions for each value type.
  */
 static size_t subCounts[DATAPOINT_TYPE_COUNT] = {0};
 
@@ -212,7 +227,7 @@ int datastoreUtilAllocateSubs(DatapointType_t datapointType, size_t maxSubCount)
   if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
     err = -ENOTSUP;
-    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    LOG_ERR("ERROR %d: unsupported value type %d", err, datapointType);
     return err;
   }
 
@@ -292,7 +307,7 @@ int datastoreUtilAddSubscription(DatapointType_t datapointType, GenericSubscript
   if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
     err = -ENOTSUP;
-    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    LOG_ERR("ERROR %d: unsupported value type %d", err, datapointType);
     return err;
   }
 
@@ -331,7 +346,7 @@ int datastoreUtilPauseSubscription(DatapointType_t datapointType, GenericCallbac
   if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
     err = -ENOTSUP;
-    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    LOG_ERR("ERROR %d: unsupported value type %d", err, datapointType);
     return err;
   }
 
@@ -364,7 +379,7 @@ int datastoreUtilUnpauseSubscription(DatapointType_t datapointType, GenericCallb
   if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
     err = -ENOTSUP;
-    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    LOG_ERR("ERROR %d: unsupported value type %d", err, datapointType);
     return err;
   }
 
@@ -398,7 +413,7 @@ int datastoreUtilNotify(DatapointType_t datapointType, uint32_t datapointId)
   if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
     err = -ENOTSUP;
-    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    LOG_ERR("ERROR %d: unsupported value type %d", err, datapointType);
     return err;
   }
 
@@ -434,14 +449,14 @@ int datastoreUtilReadData(DatapointType_t datapointType, uint32_t datapointId, s
   if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
     err = -ENOTSUP;
-    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    LOG_ERR("ERROR %d: unsupported value type %d", err, datapointType);
     return err;
   }
 
   if(isDatapointIdAndValCountValid(datapointId, valCount, datapointCounts[datapointType]))
   {
     err = -ENOSPC;
-    LOG_ERR("ERROR %d: reading more data than available", err);
+    LOG_ERR("ERROR %d: reading more value than available", err);
     return err;
   }
 
@@ -459,14 +474,14 @@ int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId,
   if(datapointType >= DATAPOINT_TYPE_COUNT)
   {
     err = -ENOTSUP;
-    LOG_ERR("ERROR %d: unsupported data type %d", err, datapointType);
+    LOG_ERR("ERROR %d: unsupported value type %d", err, datapointType);
     return err;
   }
 
   if(isDatapointIdAndValCountValid(datapointId, valCount, datapointCounts[datapointType]))
   {
     err = -ENOSPC;
-    LOG_ERR("ERROR %d: writing more data than available", err);
+    LOG_ERR("ERROR %d: writing more value than available", err);
     return err;
   }
 

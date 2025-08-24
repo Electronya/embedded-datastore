@@ -174,6 +174,56 @@ int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
   return resStatus;
 }
 
+int datastoreSubscribeBinary(DatastoreBinarySub_t *sub)
+{
+  return dataStoreUtilAddSubscription(DATAPOINT_BINARY, sub);
+}
+
+int datastorePauseSubBinary(DatastoreBinarySubCb_t subCallback)
+{
+  return datastoreUtilPauseSubscription(DATAPOINT_BINARY, (NotifierCallback_t)subCallback);
+}
+
+int datastoreUnpauseSubBinary(DatastoreBinarySubCb_t subCallback)
+{
+  return datastoreUtilUnpauseSubscription(DATAPOINT_BINARY, (NotifierCallback_t)subCallback);
+}
+
+int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
+{
+  return datastoreRead(DATAPOINT_BINARY, datapointId, valCount, response, (Datapoint_t *)values);
+}
+
+int datastoreWriteBinary(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
+{
+  return datastoreWrite(DATAPOINT_BINARY, datapointId, (Datapoint_t *)values, valCount, response);
+}
+
+int datastoreSubscribeButton(DatastoreButtonSub_t *sub)
+{
+  return dataStoreUtilAddSubscription(DATAPOINT_BUTTON, sub);
+}
+
+int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback)
+{
+  return datastoreUtilPauseSubscription(DATAPOINT_BUTTON, (NotifierCallback_t)subCallback);
+}
+
+int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
+{
+  return datastoreUtilUnpauseSubscription(DATAPOINT_BUTTON, (NotifierCallback_t)subCallback);
+}
+
+int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
+{
+  return datastoreRead(DATAPOINT_BUTTON, datapointId, valCount, response, (Datapoint_t *)values);
+}
+
+int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
+{
+  return datastoreWrite(DATAPOINT_BUTTON, datapointId, (Datapoint_t *)values, valCount, response);
+}
+
 int datastoreSubscribeFloat(DatastoreFloatSub_t *sub)
 {
   return dataStoreUtilAddSubscription(DATAPOINT_FLOAT, sub);
@@ -197,31 +247,6 @@ int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *res
 int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, struct k_msgq *response)
 {
   return datastoreWrite(DATAPOINT_FLOAT, datapointId, (Datapoint_t *)values, valCount, response);
-}
-
-int datastoreSubscribeUint(DatastoreUintSub_t *sub)
-{
-  return dataStoreUtilAddSubscription(DATAPOINT_UINT, sub);
-}
-
-int datastorePauseSubUint(DatastoreUintSubCb_t subCallback)
-{
-  return datastoreUtilPauseSubscription(DATAPOINT_UINT, (NotifierCallback_t)subCallback);
-}
-
-int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback)
-{
-  return datastoreUtilUnpauseSubscription(DATAPOINT_UINT, (NotifierCallback_t)subCallback);
-}
-
-int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
-{
-  return datastoreRead(DATAPOINT_UINT, datapointId, valCount, response, (Datapoint_t *)values);
-}
-
-int datastoreWriteUint(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
-{
-  return datastoreWrite(DATAPOINT_UINT, datapointId, (Datapoint_t *)values, valCount, response);
 }
 
 int datastoreSubscribeInt(DatastoreIntSub_t *sub)
@@ -274,53 +299,29 @@ int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t val
   return datastoreWrite(DATAPOINT_MULTI_STATE, datapointId, (Datapoint_t *)values, valCount, response);
 }
 
-int datastoreSubscribeButton(DatastoreButtonSub_t *sub)
+int datastoreSubscribeUint(DatastoreUintSub_t *sub)
 {
-  return dataStoreUtilAddSubscription(DATAPOINT_BUTTON, sub);
+  return dataStoreUtilAddSubscription(DATAPOINT_UINT, sub);
 }
 
-int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback)
+int datastorePauseSubUint(DatastoreUintSubCb_t subCallback)
 {
-  return datastoreUtilPauseSubscription(DATAPOINT_BUTTON, (NotifierCallback_t)subCallback);
+  return datastoreUtilPauseSubscription(DATAPOINT_UINT, (NotifierCallback_t)subCallback);
 }
 
-int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
+int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback)
 {
-  return datastoreUtilUnpauseSubscription(DATAPOINT_BUTTON, (NotifierCallback_t)subCallback);
+  return datastoreUtilUnpauseSubscription(DATAPOINT_UINT, (NotifierCallback_t)subCallback);
 }
 
-int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
+int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
 {
-  return datastoreRead(DATAPOINT_BUTTON, datapointId, valCount, response, (Datapoint_t *)values);
+  return datastoreRead(DATAPOINT_UINT, datapointId, valCount, response, (Datapoint_t *)values);
 }
 
-int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
+int datastoreWriteUint(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
 {
-  return datastoreWrite(DATAPOINT_BUTTON, datapointId, (Datapoint_t *)values, valCount, response);
+  return datastoreWrite(DATAPOINT_UINT, datapointId, (Datapoint_t *)values, valCount, response);
 }
 
-int datastoreReturnFloatBuffer(DatapointData_t *buffer)
-{
-  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
-}
-
-int datastoreReturnUintBuffer(Uint32_t *buffer)
-{
-  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
-}
-
-int datastoreReturnIntBuffer(int32_t *buffer)
-{
-  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
-}
-
-int datastoreReturnMultiStateBuffer(Uint32_t *buffer)
-{
-  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
-}
-
-int datastoreReturnButtonBuffer(Uint32_t *buffer)
-{
-  return datastoreBufPoolReturn(bufPool, (Datapoint_t *)buffer);
-}
 /** @} */
