@@ -51,15 +51,6 @@ typedef struct
 int datastoreUtilAllocateSubs(DatapointType_t datapointType, size_t maxSubCount);
 
 /**
- * @brief   Initialize the datastore buffer pool.
- *
- * @param[in]   maxSubs: The maximum subscription count.
- *
- * @return  0 if successful, the error code otherwise.
- */
-int datastoreUtilInitBufferPool(DatastoreMaxSubs_t *maxSubs);
-
-/**
  * @brief   Do the initial notifications.
  *
  * @return  0 if successful, the error code otherwise.
