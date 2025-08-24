@@ -1,0 +1,20 @@
+# Electronya Embedded Datastore
+# Copyright (C) 2025 by Electronya
+
+config ENYA_DATASTORE
+  bool "Electronya Embedded Datastore"
+  default y
+  help
+    The Electronya embedded application datastore.
+
+config FIRST_FLOAT_DEFAULT_VAL
+  int "First Float Default Value"
+  default 123
+  help
+    The 1st float default value. Needs to be divided by 10.
+
+config SECOND_INT_DEFAuLT_VAL
+  int "Second Signed Integer Default Value"
+  default -12
+  help
+    The 2nd signed integer default value.
