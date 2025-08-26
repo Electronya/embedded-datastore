@@ -7,13 +7,19 @@ config ENYA_DATASTORE
   help
     The Electronya embedded application datastore.
 
+config ENYA_DATASTORE_LOG_LEVEL
+  int "Electronya Embedded Datastore Log Level"
+  default 3
+  help
+    The Electronya embedded datastore log level.
+
 config FIRST_FLOAT_DEFAULT_VAL
   int "First Float Default Value"
   default 123
   help
     The 1st float default value. Needs to be divided by 10.
 
-config SECOND_INT_DEFAuLT_VAL
+config SECOND_INT_DEFAULT_VAL
   int "Second Signed Integer Default Value"
   default -12
   help

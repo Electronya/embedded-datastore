@@ -20,108 +20,58 @@
 #include "datastoreBufferPool.h"
 
 /**
- * @brief   The generic return buffer function.
- */
-typedef int (*GenericReturnBuffer_t)(DatapointData_t *buffer);
-
-/**
- * @brief   The generic notifier callback.
- */
-typedef int (*GenericCallback_t)(DatapointData_t values[], size_t valCount);
-
-/**
- * @brief   The generic subscription record.
- */
-typedef struct
-{
-  uint32_t datapointId;                 /**< The datapoint ID */
-  size_t valCount;                      /**< The datapoint count */
-  bool isPaused;                        /**< The paused subscription flag */
-  GenericCallback_t callback;           /**< The subscription callback */
-} GenericSubscription_t
-
-/**
- * @brief   Allocate the array for the float subscriptions.
+ * @brief   Allocate the array for the binary subscriptions.
  *
- * @param[in]   datapointType: The datapoint type.
- * @param[in]   maxSubCount: The maximum number of subscriptions.
+ * @param[in]   maxSubCount: The maximum subscription count.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAllocateSubs(DatapointType_t datapointType, size_t maxSubCount);
+int datastoreUtilAllocateBinarySubs(size_t maxSubCount);
 
 /**
- * @brief   Do the initial notifications.
+ * @brief   Allocate the array for the button subscription.
+ *
+ * @param[in]   maxSubCount: The maximum subscription count.
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreUtilAllocateButtonSubs(size_t maxSubCount);
+
+/**
+ * @brief   Allocate the array for the float subscription.
+ *
+ * @param[in]   maxSubCount: The maximum subscription count.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilDoInitNotifications(void);
+int datastoreUtilAllocateFloatSubs(size_t maxSubCount);
 
 /**
- * @brief   Add a subscription.
+ * @brief   Allocate the array for the signed integer subscription.
  *
- * @param[in]   datapointType: The datapoint type.
- * @param[in]   sub: The subscription.
+ * @param[in]   maxSubCount: The maximum subscription count.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddSubscription(DatapointType_t datapointType, GenericSubscription_t *sub);
+int datastoreUtilAllocateIntSubs(size_t maxSubCount);
 
 /**
- * @brief   Pause a subscription.
+ * @brief   Allocate the array for the multi-state subscription.
  *
- * @param[in]   datapointType: The datapoint type.
- * @param[in]   callback: The subscription callback.
+ * @param[in]   maxSubCount: The maximum subscription count.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilPauseSubscription(DatapointType_t datapointType, GenericCallback_t callback);
+int datastoreUtilAllocateMultiStateSubs(size_t maxSubCount);
 
 /**
- * @brief   Unpause a subscription.
+ * @brief   Allocate the array for the unsigned integer subscription.
  *
- * @param[in]   datapointType: The datapoint type.
- * @param[in]   callback: The subscription callback;
+ * @param[in]   maxSubCount: The maximum subscription count.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilUnpauseSubscription(DatapointType_t datapointType, GenericCallback_t callback);
-
-/**
- * @brief   Notify for a specific datapoint.
- *
- * @param[in]   datapointType: The datapoint type.
- * @param[in]   datapointId: The datapoint id.
- *
- * @return  0 if successful, the error code otherwise.
- */
-int datastoreUtilNotify(DatapointType_t datapointType, uint32_t datapointId);
-
-/**
- * @brief   Read values.
- *
- * @param[in]   datapointType: The datapoint type.
- * @param[in]   datapointId: The datapoint ID.
- * @param[in]   valCount: The value count to read.
- * @param[out]  values: The output buffer.
- *
- * @return  0 if successful, the error code otherwise.
- */
-int datastoreUtilReadData(DatapointType_t datapointType, uint32_t datapointId, size_t valCount, DatapointData_t values[]);
-
-/**
- * @brief   Write values.
- *
- * @param[in]   datapointType: The datapoint type.
- * @param[in]   datapointId: The datapoint ID.
- * @param[in]   values: The values.
- * @param[in]   valCount: The values count.
- * @param[out]  needToNotify: The need to notify flag.
- *
- * @return  0 if successful, the error code otherwise.
- */
-int datastoreUtilWriteData(DatapointType_t datapointType, uint32_t datapointId,
-                           DatapointData_t values[], size_t valCount, bool *needToNotify);
+int datastoreUtilAllocateUintSubs(size_t maxSubCount);
 
 #endif    /* DATASTORE_SRV_UTIL */
 
