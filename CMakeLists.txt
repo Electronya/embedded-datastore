@@ -12,7 +12,6 @@ if(CONFIG_ENYA_DATASTORE)
       ./src/datastore.c
       ./src/datastoreUtil.c
       ./src/datastoreCmd.c
-      ./src/datastoreBufferPool.c
     )
   endif()
 endif()

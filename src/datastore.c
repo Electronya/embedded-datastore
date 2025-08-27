@@ -21,14 +21,34 @@
 /* Setting module logging */
 LOG_MODULE_REGISTER(DATASTORE_LOGGER_NAME, CONFIG_ENYA_DATASTORE_LOG_LEVEL);
 
+/**
+ * @brief   The datastore service stack size.
+ */
 #define DATASTORE_STACK_SIZE                                    (256)
+
+/**
+ * @brief   The datastore response timeout [ms].
+ */
 #define DATASTORE_RESPONSE_TIMEOUT                              (5)
+
+/**
+ * @brief   The datastore buffer pool allocation timeout.
+ */
+#define DATASTORE_BUFFER_ALLOC_TIMEOUT                          (4)
+
+/**
+ * @brief   The datastore buffer count.
+ */
+#define DATASTORE_BUFFER_COUNT                                  (10)
 
 /**
  * @brief The thread stack.
 */
 K_THREAD_STACK_DEFINE(datastoreStack, DATASTORE_STACK_SIZE);
 
+/**
+ * @brief   The datastore message type.
+ */
 typedef enum
 {
   DATASTORE_READ = 0,
@@ -36,6 +56,9 @@ typedef enum
   DATASTORE_MSG_TYPE_COUNT,
 } DatastoreMsgtype_t;
 
+/**
+ * @brief   The datastore message.
+ */
 typedef struct
 {
   DatastoreMsgtype_t msgType;
@@ -51,6 +74,14 @@ typedef struct
  */
 static struct k_thread thread;
 
+/**
+ * @brief   The datastore buffer pool.
+ */
+static osMemoryPoolId_t pool = NULL;
+
+/**
+ * @brief   The datastore message queue.
+ */
 K_MSGQ_DEFINE(datastoreQueue, sizeof(DatastoreMsg_t), DATASTORE_MSG_COUNT, 4);
 
 /**
@@ -108,6 +139,8 @@ static void run(void *p1, void *p2, void *p3)
 int datastoreInit(size_t maxSubs[DATAPOINT_TYPE_COUNT], uint32_t priority, k_tid_t *threadId)
 {
   int err;
+  size_t datapointCounts[DATAPOINT_TYPE_COUNT] = {BINARY_DATAPOINT_COUNT, BUTTON_DATAPOINT_COUNT, FLOAT_DATAPOINT_COUNT,
+                                                  INT_DATAPOINT_COUNT, MULTI_STATE_DATAPOINT_COUNT, UINT_DATAPOINT_COUNT};
 
   err = datastoreUtilAllocateBinarySubs(maxSubs[DATAPOINT_BINARY]);
   if(err < 0)
@@ -132,6 +165,8 @@ int datastoreInit(size_t maxSubs[DATAPOINT_TYPE_COUNT], uint32_t priority, k_tid
   err = datastoreUtilAllocateUintSubs(maxSubs[DATAPOINT_UINT]);
   if(err < 0)
     return err;
+
+  pool = osMemoryPoolNew(DATASTORE_BUFFER_COUNT, datastoreUtilCalculateBufferSize(datapointCounts), NULL);
 
   *threadId = k_thread_create(&thread, datastoreStack, DATASTORE_STACK_SIZE, run,
                               NULL, NULL, NULL, K_PRIO_PREEMPT(priority), 0, K_FOREVER);

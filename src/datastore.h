@@ -17,6 +17,7 @@
 #define DATASTORE_SRV
 
 #include <zephyr/kernel.h>
+#include <zephyr/portability/cmsis_os2.h>
 
 #include "datastoreMeta.h"
 
@@ -95,32 +96,32 @@ enum UintDatapoint
 /**
  * @brief   The binary subscription callback.
  */
-typedef int (*DatastoreBinarySubCb_t)(bool values[], size_t *valCount);
+typedef int (*DatastoreBinarySubCb_t)(bool values[], size_t *valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The button subscription callback.
  */
-typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t *valCount);
+typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t *valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The float subscription callback.
  */
-typedef int (*DatastoreFloatSubCb_t)(float values[], size_t *valCount);
+typedef int (*DatastoreFloatSubCb_t)(float values[], size_t *valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The signed integer subscription callback.
  */
-typedef int (*DatastoreIntSubCb_t)(int32_t values[], size_t *valCount);
+typedef int (*DatastoreIntSubCb_t)(int32_t values[], size_t *valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The multi-state subscription callback.
  */
-typedef int (*DatastoreMultiStateSubCb_t)(uint32_t values[], size_t *valCount);
+typedef int (*DatastoreMultiStateSubCb_t)(uint32_t values[], size_t *valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The unsigned integer subscription callback.
  */
-typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t *valCount);
+typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t *valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The binary subscription record.

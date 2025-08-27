@@ -363,4 +363,16 @@ int datastoreUtilAllocateUintSubs(size_t maxSubCount)
   return 0;
 }
 
+size_t datastoreUtilCalculateBufferSize(size_t datapointCounts[DATAPOINT_TYPE_COUNT])
+{
+  size_t bufferSize = 0;
+
+  for(uint32_t i = 0; i < DATAPOINT_TYPE_COUNT; ++i)
+  {
+    bufferSize = bufferSize < datapointCounts[i] ? datapointCounts[i] : bufferSize;
+  }
+
+  return bufferSize * sizeof(Datapoint_t);
+}
+
 /** @} */

@@ -17,7 +17,6 @@
 #define DATASTORE_SRV_UTIL
 
 #include "datastore.h"
-#include "datastoreBufferPool.h"
 
 /**
  * @brief   Allocate the array for the binary subscriptions.
@@ -72,6 +71,15 @@ int datastoreUtilAllocateMultiStateSubs(size_t maxSubCount);
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreUtilAllocateUintSubs(size_t maxSubCount);
+
+/**
+ * @brief   Calculate the maximum buffer size.
+ *
+ * @param[in]   datapointCounts: The datapoint count for each types.
+ *
+ * @return  The calculated maximum buffer size.
+ */
+size_t datastoreUtilCalculateBufferSize(size_t datapointCounts[DATAPOINT_TYPE_COUNT]);
 
 #endif    /* DATASTORE_SRV_UTIL */
 
