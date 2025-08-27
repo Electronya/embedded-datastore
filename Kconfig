@@ -4,6 +4,7 @@
 config ENYA_DATASTORE
   bool "Electronya Embedded Datastore"
   default y
+  depends on CMSIS_RTOS_V2
   help
     The Electronya embedded application datastore.
 
