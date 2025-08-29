@@ -168,7 +168,7 @@
 //  *
 //  * @return  0 if successful, the error code otherwise.
 //  */
-// static int convertValueFromString(DatapointType_t datapointType, char *str, DatapointData_t *value)
+// static int convertValueFromString(DatapointType_t datapointType, char *str, DatapointValue_t *value)
 // {
 //   int err;
 //   char *endPtr;
@@ -297,7 +297,7 @@
 //   size_t datapointCount;
 //   DatapointType_t type;
 //   uint32_t datapointId;
-//   DatapointData_t value;
+//   DatapointValue_t value;
 
 //   ARG_UNUSED(argc);
 

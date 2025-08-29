@@ -211,73 +211,73 @@ int datastoreInit(size_t maxSubs[DATAPOINT_TYPE_COUNT], uint32_t priority, k_tid
  *
  * @return  0 if successful, the error code otherwise.
  */
-// int datastoreRead(DatapointType_t datapointType, uint32_t datapointId, size_t valCount,
-//                   struct k_msgq *response, Datapoint_t values[]);
+int datastoreRead(DatapointType_t datapointType, uint32_t datapointId, size_t valCount,
+                  struct k_msgq *response, DatapointValue_t values[]);
 
-// /**
-//  * @brief   Write a datapoint
-//  *
-//  * @param[in]   datapointType: The datapoint type.
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   values: The values to write.
-//  * @param[in]   valCount: The count of values to write.
-//  * @param[in]   response: The response queue (NULL, if not needed).
-//  *
-//  * @return  0 if successful, the error code.
-//  */
-// int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
-//                    Datapoint_t values[], size_t valCount, struct k_msgq *response);
+/**
+ * @brief   Write a datapoint
+ *
+ * @param[in]   datapointType: The datapoint type.
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
+                   DatapointValue_t values[], size_t valCount, struct k_msgq *response);
 
-// /**
-//  * @brief   Subscribe to binary datapoint.
-//  *
-//  * @param[in]   sub: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreSubscribeBinary(DatastoreBinarySub_t *sub);
+/**
+ * @brief   Subscribe to binary datapoint.
+ *
+ * @param[in]   sub: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeBinary(DatastoreBinarySub_t *sub);
 
-// /**
-//  * @brief   Pause subscription to binary datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastorePauseSubBinary(DatastoreBinarySubCb_t subCallback);
+/**
+ * @brief   Pause subscription to binary datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastorePauseSubBinary(DatastoreBinarySubCb_t subCallback);
 
-// /**
-//  * @brief   Unpause subscription to binary datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreUnpauseSubBinary(DatastoreBinarySubCb_t subCallback);
+/**
+ * @brief   Unpause subscription to binary datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnpauseSubBinary(DatastoreBinarySubCb_t subCallback);
 
-// /**
-//  * @brief   Read a binary datapoint.
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   valCount: The count of value to read.
-//  * @param[in]   response: The response queue.
-//  * @param[out]  values: The output buffer.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
+/**
+ * @brief   Read a binary datapoint.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The count of value to read.
+ * @param[in]   response: The response queue.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *response, bool values[]);
 
-// /**
-//  * @brief   Write a binary datapoint
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   values: The values to write.
-//  * @param[in]   valCount: The count of values to write.
-//  * @param[in]   response: The response queue (NULL, if not needed).
-//  *
-//  * @return  0 if successful, the error code.
-//  */
-// int datastoreWriteBinary(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
+/**
+ * @brief   Write a binary datapoint
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, struct k_msgq *response);
 
 // /**
 //  * @brief   Subscribe to button datapoint.

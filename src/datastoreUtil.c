@@ -156,7 +156,7 @@ static struct DatastoreIntSub intSubs  = {.entries = NULL, .maxCount = 0, .activ
  */
 struct DatastoreMultiStateSub
 {
-  DatastoreIntSub_t *entries;
+  DatastoreMultiStateSub_t *entries;
   size_t maxCount;
   size_t activeCount;
 };
@@ -171,7 +171,7 @@ static struct DatastoreMultiStateSub multiStateSubs  = {.entries = NULL, .maxCou
  */
 struct DatastoreUintSub
 {
-  DatastoreIntSub_t *entries;
+  DatastoreUintSub_t *entries;
   size_t maxCount;
   size_t activeCount;
 };
@@ -373,6 +373,300 @@ size_t datastoreUtilCalculateBufferSize(size_t datapointCounts[DATAPOINT_TYPE_CO
   }
 
   return bufferSize * sizeof(Datapoint_t);
+}
+
+int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub)
+{
+  int err;
+
+  if(binarySubs.activeCount + 1 >= binarySubs.maxCount)
+  {
+    err = -ENOBUFS;
+    LOG_ERR("ERROR %d: unable to add new binary subscription, entries full", err);
+    return err;
+  }
+
+  ++binarySubs.activeCount;
+  memcpy(binarySubs.entries + binarySubs.activeCount, sub, sizeof(DatastoreBinarySub_t));
+
+  return 0;
+}
+
+int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool isPaused)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < binarySubs.activeCount && err < 0; ++i)
+  {
+    if(binarySubs.entries[i].callback == subCallback)
+    {
+      binarySubs.entries[i].isPaused = isPaused;
+
+      if(isPaused)
+        LOG_INF("binary subscription entry %d paused", i);
+      else
+        LOG_INF("binary subscription entry %d unpaused", i);
+
+      err = 0;
+    }
+  }
+
+  if(err < 0)
+    LOG_WRN("ERROR %d: unable to find binary subscription %p", err, subCallback);
+
+  return err;
+}
+
+int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub)
+{
+  int err;
+
+  if(buttonSubs.activeCount + 1 >= buttonSubs.maxCount)
+  {
+    err = -ENOBUFS;
+    LOG_ERR("ERROR %d: unable to add new button subscription, entries full", err);
+    return err;
+  }
+
+  ++buttonSubs.activeCount;
+  memcpy(buttonSubs.entries + buttonSubs.activeCount, sub, sizeof(DatastoreButtonSub_t));
+
+  return 0;
+}
+
+int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool isPaused)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < buttonSubs.activeCount && err < 0; ++i)
+  {
+    if(buttonSubs.entries[i].callback == subCallback)
+    {
+      buttonSubs.entries[i].isPaused = isPaused;
+
+      if(isPaused)
+        LOG_INF("button subscription entry %d paused", i);
+      else
+        LOG_INF("button subscription entry %d unpaused", i);
+
+      err = 0;
+    }
+  }
+
+  if(err < 0)
+    LOG_WRN("ERROR %d: unable to find button subscription %p", err, subCallback);
+
+  return err;
+}
+
+int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub)
+{
+  int err;
+
+  if(floatSubs.activeCount + 1 >= floatSubs.maxCount)
+  {
+    err = -ENOBUFS;
+    LOG_ERR("ERROR %d: unable to add new button subscription, entries full", err);
+    return err;
+  }
+
+  ++floatSubs.activeCount;
+  memcpy(floatSubs.entries + floatSubs.activeCount, sub, sizeof(DatastoreFloatSub_t));
+
+  return 0;
+}
+
+int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool isPaused)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < floatSubs.activeCount && err < 0; ++i)
+  {
+    if(floatSubs.entries[i].callback == subCallback)
+    {
+      floatSubs.entries[i].isPaused = isPaused;
+
+      if(isPaused)
+        LOG_INF("float subscription entry %d paused", i);
+      else
+        LOG_INF("float subscription entry %d unpaused", i);
+
+      err = 0;
+    }
+  }
+
+  if(err < 0)
+    LOG_WRN("ERROR %d: unable to find float subscription %p", err, subCallback);
+
+  return err;
+}
+
+int datastoreUtilAddIntSub(DatastoreIntSub_t *sub)
+{
+  int err;
+
+  if(intSubs.activeCount + 1 >= intSubs.maxCount)
+  {
+    err = -ENOBUFS;
+    LOG_ERR("ERROR %d: unable to add new signed integer subscription, entries full", err);
+    return err;
+  }
+
+  ++intSubs.activeCount;
+  memcpy(intSubs.entries + intSubs.activeCount, sub, sizeof(DatastoreIntSub_t));
+
+  return 0;
+}
+
+int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPaused)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < intSubs.activeCount && err < 0; ++i)
+  {
+    if(intSubs.entries[i].callback == subCallback)
+    {
+      intSubs.entries[i].isPaused = isPaused;
+
+      if(isPaused)
+        LOG_INF("signed integer subscription entry %d paused", i);
+      else
+        LOG_INF("signed integer subscription entry %d unpaused", i);
+
+      err = 0;
+    }
+  }
+
+  if(err < 0)
+    LOG_WRN("ERROR %d: unable to find signed integer subscription %p", err, subCallback);
+
+  return err;
+}
+
+int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub)
+{
+  int err;
+
+  if(multiStateSubs.activeCount + 1 >= multiStateSubs.maxCount)
+  {
+    err = -ENOBUFS;
+    LOG_ERR("ERROR %d: unable to add new multi-state subscription, entries full", err);
+    return err;
+  }
+
+  ++multiStateSubs.activeCount;
+  memcpy(multiStateSubs.entries + multiStateSubs.activeCount, sub, sizeof(DatastoreMultiStateSub_t));
+
+  return 0;
+}
+
+int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallback, bool isPaused)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < multiStateSubs.activeCount && err < 0; ++i)
+  {
+    if(multiStateSubs.entries[i].callback == subCallback)
+    {
+      multiStateSubs.entries[i].isPaused = isPaused;
+
+      if(isPaused)
+        LOG_INF("multi-state subscription entry %d paused", i);
+      else
+        LOG_INF("multi-state subscription entry %d unpaused", i);
+
+      err = 0;
+    }
+  }
+
+  if(err < 0)
+    LOG_WRN("ERROR %d: unable to find multi-state subscription %p", err, subCallback);
+
+  return err;
+}
+
+int datastoreUtilAddUintSub(DatastoreUintSub_t *sub)
+{
+  int err;
+
+  if(uintSubs.activeCount + 1 >= uintSubs.maxCount)
+  {
+    err = -ENOBUFS;
+    LOG_ERR("ERROR %d: unable to add new unsigned integer subscription, entries full", err);
+    return err;
+  }
+
+  ++uintSubs.activeCount;
+  memcpy(uintSubs.entries + uintSubs.activeCount, sub, sizeof(DatastoreUintSub_t));
+
+  return 0;
+}
+
+int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused)
+{
+  int err = -ESRCH;
+
+  if(!subCallback)
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid subscription callback", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < uintSubs.activeCount && err < 0; ++i)
+  {
+    if(uintSubs.entries[i].callback == subCallback)
+    {
+      uintSubs.entries[i].isPaused = isPaused;
+
+      if(isPaused)
+        LOG_INF("unsigned integer subscription entry %d paused", i);
+      else
+        LOG_INF("unsigned integer subscription entry %d unpaused", i);
+
+      err = 0;
+    }
+  }
+
+  if(err < 0)
+    LOG_WRN("ERROR %d: unable to find unsigned integer subscription %p", err, subCallback);
+
+  return err;
 }
 
 /** @} */

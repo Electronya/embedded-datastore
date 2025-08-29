@@ -113,14 +113,14 @@ typedef union
   float floatVal;                 /**< Float value. */
   uint32_t uintVal;               /**< unsigned integer/multi-state/button value. */
   int32_t intVal;                 /**< signed integer value. */
-} DatapointData_t;
+} DatapointValue_t;
 
 /**
  * @brief   Datastore datapoint.
  */
 typedef struct
 {
-  DatapointData_t value;          /**< The value. */
+  DatapointValue_t value;         /**< The value. */
   uint32_t flags;                 /**< The datapoint flags. */
 } Datapoint_t;
 
