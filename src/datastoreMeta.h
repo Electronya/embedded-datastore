@@ -146,7 +146,7 @@ typedef struct
  * @brief   Float datapoint information X-macro.
  * @note    X(datapoint ID, option flag, default value)
  */
-#define DATASTORE_FLOAT_DATAPOINTS        X(FLOAT_FIRST_DATAPOINT,   DATAPOINT_FLAG_NVM_MASK, CONFIG_FIRST_FLOAT_DEFAULT_VAL/10) \
+#define DATASTORE_FLOAT_DATAPOINTS        X(FLOAT_FIRST_DATAPOINT,   DATAPOINT_FLAG_NVM_MASK, (float)CONFIG_FIRST_FLOAT_DEFAULT_VAL/10.0f) \
                                           X(FLOAT_SECOND_DATAPOINT,  DATAPOINT_FLAG_NVM_MASK, 1.0f) \
                                           X(FLOAT_THIRD_DATAPOINT,   DATAPOINT_FLAG_NVM_MASK, 2.0f) \
                                           X(FLOAT_FOURTH_DATAPOINT,  DATAPOINT_FLAG_NVM_MASK, 3.0f)

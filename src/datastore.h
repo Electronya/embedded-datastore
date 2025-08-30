@@ -279,260 +279,260 @@ int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *re
  */
 int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, struct k_msgq *response);
 
-// /**
-//  * @brief   Subscribe to button datapoint.
-//  *
-//  * @param[in]   sub: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreSubscribeButton(DatastoreButtonSub_t *sub);
+/**
+ * @brief   Subscribe to button datapoint.
+ *
+ * @param[in]   sub: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeButton(DatastoreButtonSub_t *sub);
 
-// /**
-//  * @brief   Pause subscription to button datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback);
+/**
+ * @brief   Pause subscription to button datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback);
 
-// /**
-//  * @brief   Unpause subscription to button datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback);
+/**
+ * @brief   Unpause subscription to button datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback);
 
-// /**
-//  * @brief   Read a button datapoint.
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   valCount: The count of value to read.
-//  * @param[in]   response: The response queue.
-//  * @param[out]  values: The output buffer.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
+/**
+ * @brief   Read a button datapoint.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The count of value to read.
+ * @param[in]   response: The response queue.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
 
-// /**
-//  * @brief   Write a button datapoint
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   values: The values to write.
-//  * @param[in]   valCount: The count of values to write.
-//  * @param[in]   response: The response queue (NULL, if not needed).
-//  *
-//  * @return  0 if successful, the error code.
-//  */
-// int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
+/**
+ * @brief   Write a button datapoint
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
 
-// /**
-//  * @brief   Subscribe to float datapoint.
-//  *
-//  * @param[in]   sub: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreSubscribeFloat(DatastoreFloatSub_t *sub);
+/**
+ * @brief   Subscribe to float datapoint.
+ *
+ * @param[in]   sub: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeFloat(DatastoreFloatSub_t *sub);
 
-// /**
-//  * @brief   Pause subscription to float datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastorePauseSubFloat(DatastoreFloatSubCb_t subCallback);
+/**
+ * @brief   Pause subscription to float datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastorePauseSubFloat(DatastoreFloatSubCb_t subCallback);
 
-// /**
-//  * @brief   Unpause subscription to float datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreUnpauseSubFloat(DatastoreFloatSubCb_t subCallback);
+/**
+ * @brief   Unpause subscription to float datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnpauseSubFloat(DatastoreFloatSubCb_t subCallback);
 
-// /**
-//  * @brief   Read a float datapoint.
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   valCount: The count of value to read.
-//  * @param[in]   response: The response queue.
-//  * @param[out]  values: The output buffer.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *response, float values[]);
+/**
+ * @brief   Read a float datapoint.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The count of value to read.
+ * @param[in]   response: The response queue.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *response, float values[]);
 
-// /**
-//  * @brief   Write a float datapoint
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   values: The values to write.
-//  * @param[in]   valCount: The count of values to write.
-//  * @param[in]   response: The response queue (NULL, if not needed).
-//  *
-//  * @return  0 if successful, the error code.
-//  */
-// int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, struct k_msgq *response);
+/**
+ * @brief   Write a float datapoint
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, struct k_msgq *response);
 
-// /**
-//  * @brief   Subscribe to integer datapoint.
-//  *
-//  * @param[in]   sub: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreSubscribeInt(DatastoreIntSub_t *sub);
+/**
+ * @brief   Subscribe to integer datapoint.
+ *
+ * @param[in]   sub: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeInt(DatastoreIntSub_t *sub);
 
-// /**
-//  * @brief   Pause subscription to signed integer datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastorePauseSubInt(DatastoreIntSubCb_t subCallback);
+/**
+ * @brief   Pause subscription to signed integer datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastorePauseSubInt(DatastoreIntSubCb_t subCallback);
 
-// /**
-//  * @brief   Unpause subscription to signed integer datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback);
+/**
+ * @brief   Unpause subscription to signed integer datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback);
 
-// /**
-//  * @brief   Read a integer datapoint.
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   valCount: The count of value to read.
-//  * @param[in]   response: The response queue.
-//  * @param[out]  values: The output buffer.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *response, int32_t values[]);
+/**
+ * @brief   Read a integer datapoint.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The count of value to read.
+ * @param[in]   response: The response queue.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *response, int32_t values[]);
 
-// /**
-//  * @brief   Write a integer datapoint
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   values: The values to write.
-//  * @param[in]   valCount: The count of values to write.
-//  * @param[in]   response: The response queue (NULL, if not needed).
-//  *
-//  * @return  0 if successful, the error code.
-//  */
-// int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, struct k_msgq *response);
+/**
+ * @brief   Write a integer datapoint
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, struct k_msgq *response);
 
-// /**
-//  * @brief   Subscribe to multi-state datapoint.
-//  *
-//  * @param[in]   sub: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub);
+/**
+ * @brief   Subscribe to multi-state datapoint.
+ *
+ * @param[in]   sub: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub);
 
-// /**
-//  * @brief   Pause subscription to multi-state datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastorePauseSubMultiState(DatastoreMultiStateSubCb_t subCallback);
+/**
+ * @brief   Pause subscription to multi-state datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastorePauseSubMultiState(DatastoreMultiStateSubCb_t subCallback);
 
-// /**
-//  * @brief   Unpause subscription to multi-state datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback);
+/**
+ * @brief   Unpause subscription to multi-state datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback);
 
-// /**
-//  * @brief   Read a multi-state datapoint.
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   valCount: The count of value to read.
-//  * @param[in]   response: The response queue.
-//  * @param[out]  values: The output buffer.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
+/**
+ * @brief   Read a multi-state datapoint.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The count of value to read.
+ * @param[in]   response: The response queue.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
 
-// /**
-//  * @brief   Write a multi-state datapoint
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   values: The values to write.
-//  * @param[in]   valCount: The count of values to write.
-//  * @param[in]   response: The response queue (NULL, if not needed).
-//  *
-//  * @return  0 if successful, the error code.
-//  */
-// int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
+/**
+ * @brief   Write a multi-state datapoint
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
 
-// /**
-//  * @brief   Subscribe to unsigned integer datapoint.
-//  *
-//  * @param[in]   sub: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreSubscribeUint(DatastoreUintSub_t *sub);
+/**
+ * @brief   Subscribe to unsigned integer datapoint.
+ *
+ * @param[in]   sub: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreSubscribeUint(DatastoreUintSub_t *sub);
 
-// /**
-//  * @brief   Pause subscription to unsigned integer datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastorePauseSubUint(DatastoreUintSubCb_t subCallback);
+/**
+ * @brief   Pause subscription to unsigned integer datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastorePauseSubUint(DatastoreUintSubCb_t subCallback);
 
-// /**
-//  * @brief   Unpause subscription to unsigned integer datapoint.
-//  *
-//  * @param[in]   subCallback: The subscription.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback);
+/**
+ * @brief   Unpause subscription to unsigned integer datapoint.
+ *
+ * @param[in]   subCallback: The subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback);
 
-// /**
-//  * @brief   Read an unsigned integer datapoint.
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   valCount: The count of value to read.
-//  * @param[in]   response: The response queue.
-//  * @param[out]  values: The output buffer.
-//  *
-//  * @return  0 if successful, the error code otherwise.
-//  */
-// int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
+/**
+ * @brief   Read an unsigned integer datapoint.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The count of value to read.
+ * @param[in]   response: The response queue.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
 
-// /**
-//  * @brief   Write an unsigned integer datapoint
-//  *
-//  * @param[in]   datapointId: The datapoint ID.
-//  * @param[in]   values: The values to write.
-//  * @param[in]   valCount: The count of values to write.
-//  * @param[in]   response: The response queue (NULL, if not needed).
-//  *
-//  * @return  0 if successful, the error code.
-//  */
-// int datastoreWriteUint(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
+/**
+ * @brief   Write an unsigned integer datapoint
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The values to write.
+ * @param[in]   valCount: The count of values to write.
+ * @param[in]   response: The response queue (NULL, if not needed).
+ *
+ * @return  0 if successful, the error code.
+ */
+int datastoreWriteUint(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
 
 #endif    /* DATASTORE_SRV */
 

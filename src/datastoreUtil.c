@@ -435,8 +435,8 @@ int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub)
     return err;
   }
 
-  ++buttonSubs.activeCount;
   memcpy(buttonSubs.entries + buttonSubs.activeCount, sub, sizeof(DatastoreButtonSub_t));
+  ++buttonSubs.activeCount;
 
   return 0;
 }
@@ -484,8 +484,8 @@ int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub)
     return err;
   }
 
-  ++floatSubs.activeCount;
   memcpy(floatSubs.entries + floatSubs.activeCount, sub, sizeof(DatastoreFloatSub_t));
+  ++floatSubs.activeCount;
 
   return 0;
 }
@@ -533,8 +533,8 @@ int datastoreUtilAddIntSub(DatastoreIntSub_t *sub)
     return err;
   }
 
-  ++intSubs.activeCount;
   memcpy(intSubs.entries + intSubs.activeCount, sub, sizeof(DatastoreIntSub_t));
+  ++intSubs.activeCount;
 
   return 0;
 }
@@ -582,8 +582,8 @@ int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub)
     return err;
   }
 
-  ++multiStateSubs.activeCount;
   memcpy(multiStateSubs.entries + multiStateSubs.activeCount, sub, sizeof(DatastoreMultiStateSub_t));
+  ++multiStateSubs.activeCount;
 
   return 0;
 }
@@ -631,8 +631,8 @@ int datastoreUtilAddUintSub(DatastoreUintSub_t *sub)
     return err;
   }
 
-  ++uintSubs.activeCount;
   memcpy(uintSubs.entries + uintSubs.activeCount, sub, sizeof(DatastoreUintSub_t));
+  ++uintSubs.activeCount;
 
   return 0;
 }
