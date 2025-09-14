@@ -410,13 +410,10 @@ int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *res
 
   err = datastoreRead(DATAPOINT_FLOAT, datapointId, valCount, response, buffer);
   if(err < 0)
-  {
     LOG_ERR("ERROR %d: unable to read float datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    values[i] = buffer[i].floatVal;
+  else
+    for(size_t i = 0; i < valCount; ++i)
+      values[i] = buffer[i].floatVal;
 
   osMemoryPoolFree(bufferPool, buffer);
 

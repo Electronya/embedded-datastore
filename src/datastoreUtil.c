@@ -456,7 +456,7 @@ static inline int notifyUintSubs(uint32_t datapointId, osMemoryPoolId_t pool)
  */
 static inline bool isDatapointIdAndValCountValid(uint32_t datapointId, size_t valCount, size_t datapointCount)
 {
-  return datapointId < datapointCount && datapointId + valCount < datapointCount;
+  return datapointId < datapointCount && datapointId + valCount <= datapointCount;
 }
 /* ------------------------------------------------------------------------- */
 
@@ -880,7 +880,7 @@ int datastoreUtilRead(DatapointType_t type, uint32_t datapointId, size_t valCoun
     return err;
   }
 
-  for(size_t i = i; i < valCount; ++i)
+  for(size_t i = 0; i < valCount; ++i)
     values[i] = root[datapointId + i].value;
 
   return 0;
