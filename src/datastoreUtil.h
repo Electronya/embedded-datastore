@@ -19,6 +19,11 @@
 #include "datastore.h"
 
 /**
+ * @brief   The datastore buffer pool allocation timeout.
+ */
+#define DATASTORE_BUFFER_ALLOC_TIMEOUT                          (4)
+
+/**
  * @brief   Allocate the array for the binary subscriptions.
  *
  * @param[in]   maxSubCount: The maximum subscription count.
@@ -194,6 +199,43 @@ int datastoreUtilAddUintSub(DatastoreUintSub_t *sub);
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused);
+
+/**
+ * @brief   Read from the datastore.
+ *
+ * @param[in]   type: The datapoint type.
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   valCount: The value count.
+ * @param[out]  values: The output buffer.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilRead(DatapointType_t type, uint32_t datapointId, size_t valCount, DatapointValue_t values[]);
+
+/**
+ * @brief   Write to the datastore.
+ *
+ * @param[in]   type: The datapoint type.
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   values: The input buffer.
+ * @param[in]   valCount: The value count.
+ * @param[in]   pool: The buffer pool
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilWrite(DatapointType_t type, uint32_t datapointId, DatapointValue_t values[],
+                       size_t valCount, osMemoryPoolId_t pool);
+
+/**
+ * @brief   Notify subscribers.
+ *
+ * @param[in]   type: The datapoint type.
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilNotify(DatapointType_t type, uint32_t datapointId, osMemoryPoolId_t pool);
 
 #endif    /* DATASTORE_SRV_UTIL */
 

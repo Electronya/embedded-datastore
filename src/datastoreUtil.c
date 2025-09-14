@@ -182,55 +182,47 @@ struct DatastoreUintSub
 static struct DatastoreUintSub uintSubs  = {.entries = NULL, .maxCount = 0, .activeCount = 0};
 
 /**
- * @brief   Check if the float datapoint is in rage of the subscription.
+ * @brief   Check if the binary datapoint is in rage of the subscription.
  *
  * @param[in]   datapointId: The datapoint ID.
  * @param[in]   sub: The subscription.
  *
  * @return  true if the datapoint is in range, false otherwise.
  */
-static inline bool isFloatDatapointInSubRange(uint32_t datapointId, DatastoreFloatSub_t *sub)
+static inline bool isBinaryDatapointInSubRange(uint32_t datapointId, DatastoreBinarySub_t *sub)
 {
   return datapointId >= sub->datapointId && datapointId < sub->valCount;
 }
 
 /**
- * @brief   Check if the unsigned integer datapoint is in rage of the subscription.
+ * @brief   Notify binary subscription.
  *
  * @param[in]   datapointId: The datapoint ID.
- * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
  *
- * @return  true if the datapoint is in range, false otherwise.
+ * @return  0 if successful, the error code otherwise.
  */
-static inline bool isUintDatapointInSubRange(uint32_t datapointId, DatastoreUintSub_t *sub)
+static inline int notifyBinarySubs(uint32_t datapointId, osMemoryPoolId_t pool)
 {
-  return datapointId >= sub->datapointId && datapointId < sub->valCount;
-}
+  int err = 0;
+  bool *buffer;
 
-/**
- * @brief   Check if the signed integer datapoint is in rage of the subscription.
- *
- * @param[in]   datapointId: The datapoint ID.
- * @param[in]   sub: The subscription.
- *
- * @return  true if the datapoint is in range, false otherwise.
- */
-static inline bool isIntDatapointInSubRange(uint32_t datapointId, DatastoreIntSub_t *sub)
-{
-  return datapointId >= sub->datapointId && datapointId < sub->valCount;
-}
+  for(size_t i = 0; i < binarySubs.activeCount && err == 0; ++i)
+  {
+    if(isBinaryDatapointInSubRange(datapointId, binarySubs.entries + i) && !binarySubs.entries[i].isPaused)
+    {
+      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
 
-/**
- * @brief   Check if the multi-state datapoint is in rage of the subscription.
- *
- * @param[in]   datapointId: The datapoint ID.
- * @param[in]   sub: The subscription.
- *
- * @return  true if the datapoint is in range, false otherwise.
- */
-static inline bool isMultiStateDatapointInSubRange(uint32_t datapointId, DatastoreMultiStateSub_t *sub)
-{
-  return datapointId >= sub->datapointId && datapointId < sub->valCount;
+      for(size_t j = 0; j < binarySubs.entries[i].valCount; ++j)
+        buffer[j] = (bool)binaries[binarySubs.entries[i].datapointId + j].value.uintVal;
+
+      err = binarySubs.entries[i].callback(buffer, binarySubs.entries[i].valCount, pool);
+      if(err < 0)
+        LOG_ERR("ERROR %d: unable to notify for binary entry %d", err, i);
+    }
+  }
+
+  return err;
 }
 
 /**
@@ -247,6 +239,213 @@ static inline bool isButtonDatapointInSubRange(uint32_t datapointId, DatastoreBu
 }
 
 /**
+ * @brief   Notify button subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyButtonSubs(uint32_t datapointId, osMemoryPoolId_t pool)
+{
+  int err = 0;
+  uint32_t *buffer;
+
+  for(size_t i = 0; i < buttonSubs.activeCount && err == 0; ++i)
+  {
+    if(isButtonDatapointInSubRange(datapointId, buttonSubs.entries + i) && !buttonSubs.entries[i].isPaused)
+    {
+      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+
+      for(size_t j = 0; j < buttonSubs.entries[i].valCount; ++j)
+        buffer[j] = buttons[buttonSubs.entries[i].datapointId + j].value.uintVal;
+
+      err = buttonSubs.entries[i].callback(buffer, buttonSubs.entries[i].valCount, pool);
+      if(err < 0)
+        LOG_ERR("ERROR %d: unable to notify for button entry %d", err, i);
+    }
+  }
+
+  return err;
+}
+
+/**
+ * @brief   Check if the float datapoint is in rage of the subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   sub: The subscription.
+ *
+ * @return  true if the datapoint is in range, false otherwise.
+ */
+static inline bool isFloatDatapointInSubRange(uint32_t datapointId, DatastoreFloatSub_t *sub)
+{
+  return datapointId >= sub->datapointId && datapointId < sub->valCount;
+}
+
+/**
+ * @brief   Notify float subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyFloatSubs(uint32_t datapointId, osMemoryPoolId_t pool)
+{
+  int err = 0;
+  float *buffer;
+
+  for(size_t i = 0; i < floatSubs.activeCount && err == 0; ++i)
+  {
+    if(isFloatDatapointInSubRange(datapointId, floatSubs.entries + i) && !floatSubs.entries[i].isPaused)
+    {
+      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+
+      for(size_t j = 0; j < floatSubs.entries[i].valCount; ++j)
+        buffer[j] = floats[floatSubs.entries[i].datapointId + j].value.floatVal;
+
+      err = floatSubs.entries[i].callback(buffer, floatSubs.entries[i].valCount, pool);
+      if(err < 0)
+        LOG_ERR("ERROR %d: unable to notify for float entry %d", err, i);
+    }
+  }
+
+  return err;
+}
+
+/**
+ * @brief   Check if the signed integer datapoint is in rage of the subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   sub: The subscription.
+ *
+ * @return  true if the datapoint is in range, false otherwise.
+ */
+static inline bool isIntDatapointInSubRange(uint32_t datapointId, DatastoreIntSub_t *sub)
+{
+  return datapointId >= sub->datapointId && datapointId < sub->valCount;
+}
+
+/**
+ * @brief   Notify signed integer subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyIntSubs(uint32_t datapointId, osMemoryPoolId_t pool)
+{
+  int err = 0;
+  int32_t *buffer;
+
+  for(size_t i = 0; i < intSubs.activeCount && err == 0; ++i)
+  {
+    if(isIntDatapointInSubRange(datapointId, intSubs.entries + i) && !intSubs.entries[i].isPaused)
+    {
+      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+
+      for(size_t j = 0; j < intSubs.entries[i].valCount; ++j)
+        buffer[j] = ints[intSubs.entries[i].datapointId + j].value.intVal;
+
+      err = intSubs.entries[i].callback(buffer, intSubs.entries[i].valCount, pool);
+      if(err < 0)
+        LOG_ERR("ERROR %d: unable to notify for signed integer entry %d", err, i);
+    }
+  }
+
+  return err;
+}
+
+/**
+ * @brief   Check if the multi-state datapoint is in rage of the subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   sub: The subscription.
+ *
+ * @return  true if the datapoint is in range, false otherwise.
+ */
+static inline bool isMultiStateDatapointInSubRange(uint32_t datapointId, DatastoreMultiStateSub_t *sub)
+{
+  return datapointId >= sub->datapointId && datapointId < sub->valCount;
+}
+
+/**
+ * @brief   Notify multi-state subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyMultiStateSubs(uint32_t datapointId, osMemoryPoolId_t pool)
+{
+  int err = 0;
+  uint32_t *buffer;
+
+  for(size_t i = 0; i < multiStateSubs.activeCount && err == 0; ++i)
+  {
+    if(isMultiStateDatapointInSubRange(datapointId, multiStateSubs.entries + i) && !multiStateSubs.entries[i].isPaused)
+    {
+      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+
+      for(size_t j = 0; j < multiStateSubs.entries[i].valCount; ++j)
+        buffer[j] = multiStates[multiStateSubs.entries[i].datapointId + j].value.uintVal;
+
+      err = multiStateSubs.entries[i].callback(buffer, multiStateSubs.entries[i].valCount, pool);
+      if(err < 0)
+        LOG_ERR("ERROR %d: unable to notify for multi-state entry %d", err, i);
+    }
+  }
+
+  return err;
+}
+
+/**
+ * @brief   Check if the unsigned integer datapoint is in rage of the subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   sub: The subscription.
+ *
+ * @return  true if the datapoint is in range, false otherwise.
+ */
+static inline bool isUintDatapointInSubRange(uint32_t datapointId, DatastoreUintSub_t *sub)
+{
+  return datapointId >= sub->datapointId && datapointId < sub->valCount;
+}
+
+/**
+ * @brief   Notify unsigned integer subscription.
+ *
+ * @param[in]   datapointId: The datapoint ID.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyUintSubs(uint32_t datapointId, osMemoryPoolId_t pool)
+{
+  int err = 0;
+  uint32_t *buffer;
+
+  for(size_t i = 0; i < uintSubs.activeCount && err == 0; ++i)
+  {
+    if(isUintDatapointInSubRange(datapointId, uintSubs.entries + i) && !uintSubs.entries[i].isPaused)
+    {
+      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+
+      for(size_t j = 0; j < uintSubs.entries[i].valCount; ++j)
+        buffer[j] = uints[uintSubs.entries[i].datapointId + j].value.uintVal;
+
+      err = uintSubs.entries[i].callback(buffer, uintSubs.entries[i].valCount, pool);
+      if(err < 0)
+        LOG_ERR("ERROR %d: unable to notify for binary entry %d", err, i);
+    }
+  }
+
+  return err;
+}
+
+/**
  * @brief   Check if the datapoint ID and the value count are valid.
  *
  * @param[in]   datapointId: The datapoint ID.
@@ -257,7 +456,7 @@ static inline bool isButtonDatapointInSubRange(uint32_t datapointId, DatastoreBu
  */
 static inline bool isDatapointIdAndValCountValid(uint32_t datapointId, size_t valCount, size_t datapointCount)
 {
-  return datapointId >= datapointCount && datapointId + valCount >= datapointCount;
+  return datapointId < datapointCount && datapointId + valCount < datapointCount;
 }
 /* ------------------------------------------------------------------------- */
 
@@ -665,6 +864,89 @@ int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isP
 
   if(err < 0)
     LOG_WRN("ERROR %d: unable to find unsigned integer subscription %p", err, subCallback);
+
+  return err;
+}
+
+int datastoreUtilRead(DatapointType_t type, uint32_t datapointId, size_t valCount, DatapointValue_t values[])
+{
+  int err;
+  Datapoint_t *root = datapoints[type];
+
+  if(!isDatapointIdAndValCountValid(datapointId, valCount, datapointCounts[type]))
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid datapoint ID %d or value count %d", err, datapointId, valCount);
+    return err;
+  }
+
+  for(size_t i = i; i < valCount; ++i)
+    values[i] = root[datapointId + i].value;
+
+  return 0;
+}
+
+int datastoreUtilWrite(DatapointType_t type, uint32_t datapointId, DatapointValue_t values[],
+                       size_t valCount, osMemoryPoolId_t pool)
+{
+  int err = 0;
+  bool needToNotify = false;
+  Datapoint_t *root = datapoints[type];
+
+  if(!isDatapointIdAndValCountValid(datapointId, valCount, datapointCounts[type]))
+  {
+    err = -EINVAL;
+    LOG_ERR("ERROR %d: invalid datapoint ID %d or value count %d", err, datapointId, valCount);
+    return err;
+  }
+
+  for(size_t i = 0; i < valCount; ++i)
+  {
+    needToNotify = !needToNotify && values[i].uintVal == root[i].value.uintVal ? true : needToNotify;
+    root[i].value = values[i];
+  }
+
+  osMemoryPoolFree(pool, values);
+
+  if(needToNotify)
+  {
+    err = datastoreUtilNotify(type, datapointId, pool);
+    if(err)
+      LOG_ERR("ERROR %d: unable to notify", err);
+  }
+
+  return err;
+}
+
+int datastoreUtilNotify(DatapointType_t type, uint32_t datapointId, osMemoryPoolId_t pool)
+{
+  int err;
+
+  switch(type)
+  {
+    case DATAPOINT_BINARY:
+      err = notifyBinarySubs(datapointId, pool);
+    break;
+    case DATAPOINT_BUTTON:
+      err = notifyButtonSubs(datapointId, pool);
+    break;
+    case DATAPOINT_FLOAT:
+      err = notifyFloatSubs(datapointId, pool);
+    break;
+    case DATAPOINT_INT:
+      err = notifyIntSubs(datapointId, pool);
+    break;
+    case DATAPOINT_MULTI_STATE:
+      err = notifyMultiStateSubs(datapointId, pool);
+    break;
+    case DATAPOINT_UINT:
+      err = notifyUintSubs(datapointId, pool);
+    break;
+    default:
+      err = -ENOTSUP;
+      LOG_ERR("ERROR %d: unsupported datapoint type %d", err, type);
+    break;
+  }
 
   return err;
 }

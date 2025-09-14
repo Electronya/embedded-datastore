@@ -24,17 +24,12 @@ LOG_MODULE_REGISTER(DATASTORE_LOGGER_NAME, CONFIG_ENYA_DATASTORE_LOG_LEVEL);
 /**
  * @brief   The datastore service stack size.
  */
-#define DATASTORE_STACK_SIZE                                    (256)
+#define DATASTORE_STACK_SIZE                                    (512)
 
 /**
  * @brief   The datastore response timeout [ms].
  */
 #define DATASTORE_RESPONSE_TIMEOUT                              (5)
-
-/**
- * @brief   The datastore buffer pool allocation timeout.
- */
-#define DATASTORE_BUFFER_ALLOC_TIMEOUT                          (4)
 
 /**
  * @brief   The datastore buffer count.
@@ -94,13 +89,14 @@ K_MSGQ_DEFINE(datastoreQueue, sizeof(DatastoreMsg_t), DATASTORE_MSG_COUNT, 4);
 static void run(void *p1, void *p2, void *p3)
 {
   int err;
-  int errOp;
-  bool needToNotify = false;
+  int errOp = 0;
   DatastoreMsg_t msg;
 
   // TODO: Initialize the datapoints from the NVM.
 
   // TODO: Do initial notifications.
+
+  LOG_INF("starting thread");
 
   for(;;)
   {
@@ -114,25 +110,23 @@ static void run(void *p1, void *p2, void *p3)
     switch(msg.msgType)
     {
       case DATASTORE_READ:
-        // errOp = datastoreUtilRead(msg.datapointType, msg.datapointId, msg.valCount, msg.values);
+        errOp = datastoreUtilRead(msg.datapointType, msg.datapointId, msg.valCount, msg.values);
       break;
       case DATASTORE_WRITE:
-        // errOp = datastoreUtilWrite(msg.datapointType, msg.datapointId, msg.values, msg.valCount, &needToNotify);
-
-        // if(errOp == 0 && needToNotify)
-        // {
-        //   err = datastoreUtilNotify(msg.datapointType, msg.datapointId);
-        //   if(err)
-        //     LOG_ERR("ERROR %d: unable to notify", err);
-        // }
+        errOp = datastoreUtilWrite(msg.datapointType, msg.datapointId, msg.values, msg.valCount, bufferPool);
       break;
       default:
         LOG_WRN("unsupported message type %d", msg.msgType);
       break;
     }
 
-    // if(msg.response)
-    //   k_msgq_put(msg.response, &errOp, K_NO_WAIT);
+    if(msg.response)
+    {
+      err = k_msgq_put(msg.response, &errOp, K_NO_WAIT);
+      if(err < 0)
+        LOG_ERR("ERROR %d: unable to respond to operation %d for datapoint type %d with ID %d",
+                err, msg.msgType, msg.datapointType, msg.datapointId);
+    }
   }
 }
 
@@ -314,7 +308,7 @@ int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
   return datastoreUtilSetButtonSubPauseState(subCallback, false);
 }
 
-int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
+int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, ButtonState_t values[])
 {
   int err;
   DatapointValue_t *buffer;
@@ -342,14 +336,14 @@ int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *re
   }
 
   for(size_t i = 0; i < valCount; ++i)
-    values[i] = buffer[i].uintVal;
+    values[i] = (ButtonState_t)buffer[i].uintVal;
 
   osMemoryPoolFree(bufferPool, buffer);
 
   return err;
 }
 
-int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
+int datastoreWriteButton(uint32_t datapointId, ButtonState_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
   DatapointValue_t *buffer;
@@ -370,7 +364,7 @@ int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCoun
   }
 
   for(size_t i = 0; i < valCount; ++i)
-    buffer[i].uintVal = values[i];
+    buffer[i].uintVal = (uint32_t)values[i];
 
   err = datastoreWrite(DATAPOINT_BUTTON, datapointId, buffer, valCount, response);
   if(err < 0)

@@ -96,32 +96,32 @@ enum UintDatapoint
 /**
  * @brief   The binary subscription callback.
  */
-typedef int (*DatastoreBinarySubCb_t)(bool values[], size_t *valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreBinarySubCb_t)(bool values[], size_t valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The button subscription callback.
  */
-typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t *valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The float subscription callback.
  */
-typedef int (*DatastoreFloatSubCb_t)(float values[], size_t *valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreFloatSubCb_t)(float values[], size_t valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The signed integer subscription callback.
  */
-typedef int (*DatastoreIntSubCb_t)(int32_t values[], size_t *valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreIntSubCb_t)(int32_t values[], size_t valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The multi-state subscription callback.
  */
-typedef int (*DatastoreMultiStateSubCb_t)(uint32_t values[], size_t *valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreMultiStateSubCb_t)(uint32_t values[], size_t valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The unsigned integer subscription callback.
  */
-typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t *valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The binary subscription record.
@@ -316,7 +316,7 @@ int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[]);
+int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, ButtonState_t values[]);
 
 /**
  * @brief   Write a button datapoint
@@ -328,7 +328,7 @@ int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *re
  *
  * @return  0 if successful, the error code.
  */
-int datastoreWriteButton(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response);
+int datastoreWriteButton(uint32_t datapointId, ButtonState_t values[], size_t valCount, struct k_msgq *response);
 
 /**
  * @brief   Subscribe to float datapoint.
