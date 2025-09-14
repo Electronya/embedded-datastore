@@ -897,13 +897,14 @@ int datastoreUtilWrite(DatapointType_t type, uint32_t datapointId, DatapointValu
   {
     err = -EINVAL;
     LOG_ERR("ERROR %d: invalid datapoint ID %d or value count %d", err, datapointId, valCount);
-    return err;
   }
-
-  for(size_t i = 0; i < valCount; ++i)
+  else
   {
-    needToNotify = !needToNotify && values[i].uintVal == root[i].value.uintVal ? true : needToNotify;
-    root[i].value = values[i];
+    for(size_t i = 0; i < valCount; ++i)
+    {
+      needToNotify = !needToNotify && values[i].uintVal == root[i].value.uintVal ? true : needToNotify;
+      root[i].value = values[i];
+    }
   }
 
   osMemoryPoolFree(pool, values);

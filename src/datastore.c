@@ -250,13 +250,10 @@ int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *re
 
   err = datastoreRead(DATAPOINT_BINARY, datapointId, valCount, response, buffer);
   if(err < 0)
-  {
     LOG_ERR("ERROR %d: unable to read binary datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    values[i] = (bool)buffer[i].uintVal;
+  else
+    for(size_t i = 0; i < valCount; ++i)
+      values[i] = (bool)buffer[i].uintVal;
 
   osMemoryPoolFree(bufferPool, buffer);
 
@@ -330,13 +327,10 @@ int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *re
 
   err = datastoreRead(DATAPOINT_BUTTON, datapointId, valCount, response, buffer);
   if(err < 0)
-  {
     LOG_ERR("ERROR %d: unable to read button datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    values[i] = (ButtonState_t)buffer[i].uintVal;
+  else
+    for(size_t i = 0; i < valCount; ++i)
+      values[i] = (ButtonState_t)buffer[i].uintVal;
 
   osMemoryPoolFree(bufferPool, buffer);
 
@@ -487,13 +481,10 @@ int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *respo
 
   err = datastoreRead(DATAPOINT_INT, datapointId, valCount, response, buffer);
   if(err < 0)
-  {
     LOG_ERR("ERROR %d: unable to read signed integer datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    values[i] = buffer[i].intVal;
+  else
+    for(size_t i = 0; i < valCount; ++i)
+      values[i] = buffer[i].intVal;
 
   osMemoryPoolFree(bufferPool, buffer);
 
@@ -567,13 +558,10 @@ int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq
 
   err = datastoreRead(DATAPOINT_MULTI_STATE, datapointId, valCount, response, buffer);
   if(err < 0)
-  {
     LOG_ERR("ERROR %d: unable to read multi-state datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    values[i] = buffer[i].uintVal;
+  else
+    for(size_t i = 0; i < valCount; ++i)
+      values[i] = buffer[i].uintVal;
 
   osMemoryPoolFree(bufferPool, buffer);
 
@@ -647,13 +635,10 @@ int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *resp
 
   err = datastoreRead(DATAPOINT_UINT, datapointId, valCount, response, buffer);
   if(err < 0)
-  {
     LOG_ERR("ERROR %d: unable to read unsigned integer datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    values[i] = buffer[i].uintVal;
+  else
+    for(size_t i = 0; i < valCount; ++i)
+      values[i] = buffer[i].uintVal;
 
   osMemoryPoolFree(bufferPool, buffer);
 
