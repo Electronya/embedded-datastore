@@ -39,12 +39,12 @@
 /**
  * @brief   The string for the short pressed button value.
  */
-#define SHORT_PRESSED_STR                                               "short pressed"
+#define SHORT_PRESSED_STR                                               "short_pressed"
 
 /**
  * @brief   The string for the long pressed button value.
  */
-#define LONG_PRESSED_STR                                                "long pressed"
+#define LONG_PRESSED_STR                                                "long_pressed"
 
 /**
  * @brief   The list of binary datapoint names.
@@ -498,7 +498,7 @@ static int execWriteButton(const struct shell *shell, size_t argc, char **argv)
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_button,
 	SHELL_CMD(ls, NULL, "List button objects.\n\tUsage datastore button_data ls", execListButton),
   SHELL_CMD_ARG(read, NULL, "Read a button datapoint.\n\tUsage datastore button_data read <datapoint ID> [value count]", execReadButton, 2, 1),
-	SHELL_CMD_ARG(write, NULL, "Write a button datapoint.\n\tUsage datastore button_data write <datapoint ID> <value count> <true|false> [true|false] ...",
+	SHELL_CMD_ARG(write, NULL, "Write a button datapoint.\n\tUsage datastore button_data write <datapoint ID> <value count> <unpressed|short_pressed|long_pressed> [true|false] ...",
                 execWriteButton, 3, SHELL_OPT_ARG_CHECK_SKIP),
 	SHELL_SUBCMD_SET_END);
 
