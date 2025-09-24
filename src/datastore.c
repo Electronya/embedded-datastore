@@ -213,7 +213,7 @@ int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
   return resStatus;
 }
 
-inline int datastoreSubscribeBinary(DatastoreBinarySub_t *sub)
+int datastoreSubscribeBinary(DatastoreBinarySub_t *sub)
 {
   return datastoreUtilAddBinarySub(sub);
 }
