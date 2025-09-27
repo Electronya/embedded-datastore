@@ -28,7 +28,7 @@
 /**
  * @brief   Datapoint no option flags.
  */
-#define DATAPOINT_NO_FLAG_MASK                                    ( 0 << 0)
+#define DATAPOINT_NO_FLAG_MASK                                    (0 << 0)
 
 /**
  * @brief   Datapoint in NVM flag mask.
@@ -85,7 +85,7 @@ typedef enum
 
 typedef enum
 {
-  BUTTON_DEPRESSED = 0,
+  BUTTON_UNPRESSED = 0,
   BUTTON_SHORT_PRESSED,
   BUTTON_LONG_PRESSED,
   BUTTON_STATE_COUNT
@@ -113,14 +113,14 @@ typedef union
   float floatVal;                 /**< Float value. */
   uint32_t uintVal;               /**< unsigned integer/multi-state/button value. */
   int32_t intVal;                 /**< signed integer value. */
-} DatapointData_t;
+} DatapointValue_t;
 
 /**
  * @brief   Datastore datapoint.
  */
 typedef struct
 {
-  DatapointData_t value;          /**< The value. */
+  DatapointValue_t value;         /**< The value. */
   uint32_t flags;                 /**< The datapoint flags. */
 } Datapoint_t;
 
@@ -146,7 +146,7 @@ typedef struct
  * @brief   Float datapoint information X-macro.
  * @note    X(datapoint ID, option flag, default value)
  */
-#define DATASTORE_FLOAT_DATAPOINTS        X(FLOAT_FIRST_DATAPOINT,   DATAPOINT_FLAG_NVM_MASK, 0.0f) \
+#define DATASTORE_FLOAT_DATAPOINTS        X(FLOAT_FIRST_DATAPOINT,   DATAPOINT_FLAG_NVM_MASK, (float)CONFIG_FIRST_FLOAT_DEFAULT_VAL/10.0f) \
                                           X(FLOAT_SECOND_DATAPOINT,  DATAPOINT_FLAG_NVM_MASK, 1.0f) \
                                           X(FLOAT_THIRD_DATAPOINT,   DATAPOINT_FLAG_NVM_MASK, 2.0f) \
                                           X(FLOAT_FOURTH_DATAPOINT,  DATAPOINT_FLAG_NVM_MASK, 3.0f)
@@ -155,8 +155,8 @@ typedef struct
  * @brief   signed integer datapoint information X-macro.
  * @note    X(datapoint ID, option flag, default value)
  */
-#define DATASTORE_INT_DATAPOINTS          X(INT_FIRST_DATAPOINT,     DATAPOINT_FLAG_NVM_MASK, -1) \
-                                          X(INT_SECOND_DATAPOINT,    DATAPOINT_FLAG_NVM_MASK,  0) \
+#define DATASTORE_INT_DATAPOINTS          X(INT_FIRST_DATAPOINT,     DATAPOINT_FLAG_NVM_MASK,  0) \
+                                          X(INT_SECOND_DATAPOINT,    DATAPOINT_FLAG_NVM_MASK,  CONFIG_SECOND_INT_DEFAULT_VAL) \
                                           X(INT_THIRD_DATAPOINT,     DATAPOINT_FLAG_NVM_MASK,  1) \
                                           X(INT_FOURTH_DATAPOINT,    DATAPOINT_FLAG_NVM_MASK,  2)
 
