@@ -195,7 +195,34 @@ static inline bool isBinaryDatapointInSubRange(uint32_t datapointId, DatastoreBi
 }
 
 /**
- * @brief   Notify binary subscription.
+ * @brief   Notify a single binary subscription.
+ *
+ * @param[in]   sub: The subscription to notify.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyBinarySub(DatastoreBinarySub_t *sub, osMemoryPoolId_t pool)
+{
+  int err;
+  bool *buffer;
+
+  buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!buffer)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for binary notification", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < sub->valCount; ++i)
+    buffer[i] = (bool)binaries[sub->datapointId + i].value.uintVal;
+
+  return sub->callback(buffer, sub->valCount, pool);
+}
+
+/**
+ * @brief   Notify binary subscriptions.
  *
  * @param[in]   datapointId: The datapoint ID.
  * @param[in]   pool: The buffer pool.
@@ -205,18 +232,12 @@ static inline bool isBinaryDatapointInSubRange(uint32_t datapointId, DatastoreBi
 static inline int notifyBinarySubs(uint32_t datapointId, osMemoryPoolId_t pool)
 {
   int err = 0;
-  bool *buffer;
 
   for(size_t i = 0; i < binarySubs.activeCount && err == 0; ++i)
   {
     if(isBinaryDatapointInSubRange(datapointId, binarySubs.entries + i) && !binarySubs.entries[i].isPaused)
     {
-      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-
-      for(size_t j = 0; j < binarySubs.entries[i].valCount; ++j)
-        buffer[j] = (bool)binaries[binarySubs.entries[i].datapointId + j].value.uintVal;
-
-      err = binarySubs.entries[i].callback(buffer, binarySubs.entries[i].valCount, pool);
+      err = notifyBinarySub(binarySubs.entries + i, pool);
       if(err < 0)
         LOG_ERR("ERROR %d: unable to notify for binary entry %d", err, i);
     }
@@ -239,6 +260,33 @@ static inline bool isButtonDatapointInSubRange(uint32_t datapointId, DatastoreBu
 }
 
 /**
+ * @brief   Notify a single button subscription.
+ *
+ * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyButtonSub(DatastoreButtonSub_t *sub, osMemoryPoolId_t pool)
+{
+  int err;
+  ButtonState_t *buffer;
+
+  buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!buffer)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for button notification", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < sub->valCount; ++i)
+    buffer[i] = buttons[sub->datapointId + i].value.uintVal;
+
+  return sub->callback(buffer, sub->valCount, pool);
+}
+
+/**
  * @brief   Notify button subscription.
  *
  * @param[in]   datapointId: The datapoint ID.
@@ -249,18 +297,12 @@ static inline bool isButtonDatapointInSubRange(uint32_t datapointId, DatastoreBu
 static inline int notifyButtonSubs(uint32_t datapointId, osMemoryPoolId_t pool)
 {
   int err = 0;
-  uint32_t *buffer;
 
   for(size_t i = 0; i < buttonSubs.activeCount && err == 0; ++i)
   {
     if(isButtonDatapointInSubRange(datapointId, buttonSubs.entries + i) && !buttonSubs.entries[i].isPaused)
     {
-      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-
-      for(size_t j = 0; j < buttonSubs.entries[i].valCount; ++j)
-        buffer[j] = buttons[buttonSubs.entries[i].datapointId + j].value.uintVal;
-
-      err = buttonSubs.entries[i].callback(buffer, buttonSubs.entries[i].valCount, pool);
+      err = notifyButtonSub(buttonSubs.entries + i, pool);
       if(err < 0)
         LOG_ERR("ERROR %d: unable to notify for button entry %d", err, i);
     }
@@ -283,7 +325,34 @@ static inline bool isFloatDatapointInSubRange(uint32_t datapointId, DatastoreFlo
 }
 
 /**
- * @brief   Notify float subscription.
+ * @brief   Notify a single float subscription.
+ *
+ * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyFloatSub(DatastoreFloatSub_t *sub, osMemoryPoolId_t pool)
+{
+  int err;
+  float *buffer;
+
+  buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!buffer)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for float notification", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < sub->valCount; ++i)
+    buffer[i] = floats[sub->datapointId + i].value.floatVal;
+
+  return sub->callback(buffer, sub->valCount, pool);
+}
+
+/**
+ * @brief   Notify float subscriptions.
  *
  * @param[in]   datapointId: The datapoint ID.
  * @param[in]   pool: The buffer pool.
@@ -293,18 +362,12 @@ static inline bool isFloatDatapointInSubRange(uint32_t datapointId, DatastoreFlo
 static inline int notifyFloatSubs(uint32_t datapointId, osMemoryPoolId_t pool)
 {
   int err = 0;
-  float *buffer;
 
   for(size_t i = 0; i < floatSubs.activeCount && err == 0; ++i)
   {
     if(isFloatDatapointInSubRange(datapointId, floatSubs.entries + i) && !floatSubs.entries[i].isPaused)
     {
-      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-
-      for(size_t j = 0; j < floatSubs.entries[i].valCount; ++j)
-        buffer[j] = floats[floatSubs.entries[i].datapointId + j].value.floatVal;
-
-      err = floatSubs.entries[i].callback(buffer, floatSubs.entries[i].valCount, pool);
+      err = notifyFloatSub(floatSubs.entries + i, pool);
       if(err < 0)
         LOG_ERR("ERROR %d: unable to notify for float entry %d", err, i);
     }
@@ -327,6 +390,33 @@ static inline bool isIntDatapointInSubRange(uint32_t datapointId, DatastoreIntSu
 }
 
 /**
+ * @brief   Notify a single signed integer subscription.
+ *
+ * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyIntSub(DatastoreIntSub_t *sub, osMemoryPoolId_t pool)
+{
+  int err;
+  int32_t *buffer;
+
+  buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!buffer)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for signed integer notification", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < sub->valCount; ++i)
+    buffer[i] = ints[sub->datapointId + i].value.intVal;
+
+  return sub->callback(buffer, sub->valCount, pool);
+}
+
+/**
  * @brief   Notify signed integer subscription.
  *
  * @param[in]   datapointId: The datapoint ID.
@@ -337,18 +427,12 @@ static inline bool isIntDatapointInSubRange(uint32_t datapointId, DatastoreIntSu
 static inline int notifyIntSubs(uint32_t datapointId, osMemoryPoolId_t pool)
 {
   int err = 0;
-  int32_t *buffer;
 
   for(size_t i = 0; i < intSubs.activeCount && err == 0; ++i)
   {
     if(isIntDatapointInSubRange(datapointId, intSubs.entries + i) && !intSubs.entries[i].isPaused)
     {
-      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-
-      for(size_t j = 0; j < intSubs.entries[i].valCount; ++j)
-        buffer[j] = ints[intSubs.entries[i].datapointId + j].value.intVal;
-
-      err = intSubs.entries[i].callback(buffer, intSubs.entries[i].valCount, pool);
+      err = notifyIntSub(intSubs.entries + i, pool);
       if(err < 0)
         LOG_ERR("ERROR %d: unable to notify for signed integer entry %d", err, i);
     }
@@ -371,7 +455,34 @@ static inline bool isMultiStateDatapointInSubRange(uint32_t datapointId, Datasto
 }
 
 /**
- * @brief   Notify multi-state subscription.
+ * @brief   Notify a single multi-state subscription.
+ *
+ * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyMultiStateSub(DatastoreMultiStateSub_t *sub, osMemoryPoolId_t pool)
+{
+  int err;
+  uint32_t *buffer;
+
+  buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!buffer)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for multi-state notification", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < sub->valCount; ++i)
+    buffer[i] = multiStates[sub->datapointId + i].value.uintVal;
+
+  return sub->callback(buffer, sub->valCount, pool);
+}
+
+/**
+ * @brief   Notify multi-state subscriptions.
  *
  * @param[in]   datapointId: The datapoint ID.
  * @param[in]   pool: The buffer pool.
@@ -381,18 +492,12 @@ static inline bool isMultiStateDatapointInSubRange(uint32_t datapointId, Datasto
 static inline int notifyMultiStateSubs(uint32_t datapointId, osMemoryPoolId_t pool)
 {
   int err = 0;
-  uint32_t *buffer;
 
   for(size_t i = 0; i < multiStateSubs.activeCount && err == 0; ++i)
   {
     if(isMultiStateDatapointInSubRange(datapointId, multiStateSubs.entries + i) && !multiStateSubs.entries[i].isPaused)
     {
-      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-
-      for(size_t j = 0; j < multiStateSubs.entries[i].valCount; ++j)
-        buffer[j] = multiStates[multiStateSubs.entries[i].datapointId + j].value.uintVal;
-
-      err = multiStateSubs.entries[i].callback(buffer, multiStateSubs.entries[i].valCount, pool);
+      err = notifyMultiStateSub(multiStateSubs.entries + i, pool);
       if(err < 0)
         LOG_ERR("ERROR %d: unable to notify for multi-state entry %d", err, i);
     }
@@ -415,7 +520,34 @@ static inline bool isUintDatapointInSubRange(uint32_t datapointId, DatastoreUint
 }
 
 /**
- * @brief   Notify unsigned integer subscription.
+ * @brief   Notify a single unsigned integer subscription.
+ *
+ * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+static inline int notifyUintSub(DatastoreUintSub_t *sub, osMemoryPoolId_t pool)
+{
+  int err;
+  uint32_t *buffer;
+
+  buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!buffer)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for unsigned integer notification", err);
+    return err;
+  }
+
+  for(size_t i = 0; i < sub->valCount; ++i)
+    buffer[i] = uints[sub->datapointId + i].value.uintVal;
+
+  return sub->callback(buffer, sub->valCount, pool);
+}
+
+/**
+ * @brief   Notify unsigned integer subscriptions.
  *
  * @param[in]   datapointId: The datapoint ID.
  * @param[in]   pool: The buffer pool.
@@ -425,18 +557,12 @@ static inline bool isUintDatapointInSubRange(uint32_t datapointId, DatastoreUint
 static inline int notifyUintSubs(uint32_t datapointId, osMemoryPoolId_t pool)
 {
   int err = 0;
-  uint32_t *buffer;
 
   for(size_t i = 0; i < uintSubs.activeCount && err == 0; ++i)
   {
     if(isUintDatapointInSubRange(datapointId, uintSubs.entries + i) && !uintSubs.entries[i].isPaused)
     {
-      buffer = osMemoryPoolAlloc(pool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-
-      for(size_t j = 0; j < uintSubs.entries[i].valCount; ++j)
-        buffer[j] = uints[uintSubs.entries[i].datapointId + j].value.uintVal;
-
-      err = uintSubs.entries[i].callback(buffer, uintSubs.entries[i].valCount, pool);
+      err = notifyUintSub(uintSubs.entries + i, pool);
       if(err < 0)
         LOG_ERR("ERROR %d: unable to notify for binary entry %d", err, i);
     }
@@ -458,7 +584,6 @@ static inline bool isDatapointIdAndValCountValid(uint32_t datapointId, size_t va
 {
   return datapointId < datapointCount && datapointId + valCount <= datapointCount;
 }
-/* ------------------------------------------------------------------------- */
 
 int datastoreUtilAllocateBinarySubs(size_t maxSubCount)
 {
@@ -574,7 +699,7 @@ size_t datastoreUtilCalculateBufferSize(size_t datapointCounts[DATAPOINT_TYPE_CO
   return bufferSize * sizeof(Datapoint_t);
 }
 
-int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub)
+int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub, osMemoryPoolId_t pool)
 {
   int err;
 
@@ -588,10 +713,14 @@ int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub)
   ++binarySubs.activeCount;
   memcpy(binarySubs.entries + binarySubs.activeCount, sub, sizeof(DatastoreBinarySub_t));
 
-  return 0;
+  err = notifyBinarySub(sub, pool);
+  if(err < 0)
+    LOG_ERR("ERROR %d: unable to notify for new binary entry", err);
+
+  return err;
 }
 
-int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool isPaused)
+int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
 
@@ -609,21 +738,27 @@ int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool
       binarySubs.entries[i].isPaused = isPaused;
 
       if(isPaused)
+      {
         LOG_INF("binary subscription entry %d paused", i);
+        err = 0;
+      }
       else
+      {
         LOG_INF("binary subscription entry %d unpaused", i);
-
-      err = 0;
+        err = notifyBinarySub(binarySubs.entries + i, pool);
+        if(err < 0)
+          LOG_ERR("ERROR %d: unable to notify for binary entry", err);
+      }
     }
   }
 
-  if(err < 0)
+  if(err == -ESRCH)
     LOG_WRN("ERROR %d: unable to find binary subscription %p", err, subCallback);
 
   return err;
 }
 
-int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub)
+int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub, osMemoryPoolId_t pool)
 {
   int err;
 
@@ -637,10 +772,14 @@ int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub)
   memcpy(buttonSubs.entries + buttonSubs.activeCount, sub, sizeof(DatastoreButtonSub_t));
   ++buttonSubs.activeCount;
 
+  err = notifyButtonSub(sub, pool);
+  if(err < 0)
+    LOG_ERR("ERROR %d: unable to notify for new button entry", err);
+
   return 0;
 }
 
-int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool isPaused)
+int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
 
@@ -658,38 +797,48 @@ int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool
       buttonSubs.entries[i].isPaused = isPaused;
 
       if(isPaused)
+      {
         LOG_INF("button subscription entry %d paused", i);
+        err = 0;
+      }
       else
+      {
         LOG_INF("button subscription entry %d unpaused", i);
-
-      err = 0;
+        err = notifyButtonSub(buttonSubs.entries + i, pool);
+        if(err < 0)
+          LOG_ERR("ERROR %d: unable to notify for button entry", err);
+      }
     }
   }
 
-  if(err < 0)
+  if(err == -ESRCH)
     LOG_WRN("ERROR %d: unable to find button subscription %p", err, subCallback);
 
   return err;
 }
 
-int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub)
+int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub, osMemoryPoolId_t pool)
 {
   int err;
 
   if(floatSubs.activeCount + 1 >= floatSubs.maxCount)
   {
     err = -ENOBUFS;
-    LOG_ERR("ERROR %d: unable to add new button subscription, entries full", err);
+    LOG_ERR("ERROR %d: unable to add new float subscription, entries full", err);
     return err;
   }
 
   memcpy(floatSubs.entries + floatSubs.activeCount, sub, sizeof(DatastoreFloatSub_t));
   ++floatSubs.activeCount;
 
+  err = notifyFloatSub(sub, pool);
+  if(err < 0)
+    LOG_ERR("ERROR %d: unable to notify for new float entry", err);
+
   return 0;
 }
 
-int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool isPaused)
+int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
 
@@ -707,21 +856,27 @@ int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool i
       floatSubs.entries[i].isPaused = isPaused;
 
       if(isPaused)
+      {
         LOG_INF("float subscription entry %d paused", i);
+        err = 0;
+      }
       else
+      {
         LOG_INF("float subscription entry %d unpaused", i);
-
-      err = 0;
+        err = notifyFloatSub(floatSubs.entries + i, pool);
+        if(err < 0)
+          LOG_ERR("ERROR %d: unable to notify for float entry", err);
+      }
     }
   }
 
-  if(err < 0)
+  if(err == -ESRCH)
     LOG_WRN("ERROR %d: unable to find float subscription %p", err, subCallback);
 
   return err;
 }
 
-int datastoreUtilAddIntSub(DatastoreIntSub_t *sub)
+int datastoreUtilAddIntSub(DatastoreIntSub_t *sub, osMemoryPoolId_t pool)
 {
   int err;
 
@@ -735,10 +890,14 @@ int datastoreUtilAddIntSub(DatastoreIntSub_t *sub)
   memcpy(intSubs.entries + intSubs.activeCount, sub, sizeof(DatastoreIntSub_t));
   ++intSubs.activeCount;
 
+  err = notifyIntSub(sub, pool);
+  if(err < 0)
+    LOG_ERR("ERROR %d: unable to notify for new signed integer entry", err);
+
   return 0;
 }
 
-int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPaused)
+int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
 
@@ -756,21 +915,27 @@ int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPau
       intSubs.entries[i].isPaused = isPaused;
 
       if(isPaused)
+      {
         LOG_INF("signed integer subscription entry %d paused", i);
+        err = 0;
+      }
       else
+      {
         LOG_INF("signed integer subscription entry %d unpaused", i);
-
-      err = 0;
+        err = notifyIntSub(intSubs.entries + i, pool);
+        if(err < 0)
+          LOG_ERR("ERROR %d: unable to notify for signed integer entry", err);
+      }
     }
   }
 
-  if(err < 0)
+  if(err == -ESRCH)
     LOG_WRN("ERROR %d: unable to find signed integer subscription %p", err, subCallback);
 
   return err;
 }
 
-int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub)
+int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub, osMemoryPoolId_t pool)
 {
   int err;
 
@@ -784,10 +949,14 @@ int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub)
   memcpy(multiStateSubs.entries + multiStateSubs.activeCount, sub, sizeof(DatastoreMultiStateSub_t));
   ++multiStateSubs.activeCount;
 
+  err = notifyMultiStateSub(sub, pool);
+  if(err < 0)
+    LOG_ERR("ERROR %d: unable to notify for new multi-state entry", err);
+
   return 0;
 }
 
-int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallback, bool isPaused)
+int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
 
@@ -805,21 +974,27 @@ int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallba
       multiStateSubs.entries[i].isPaused = isPaused;
 
       if(isPaused)
+      {
         LOG_INF("multi-state subscription entry %d paused", i);
+        err = 0;
+      }
       else
+      {
         LOG_INF("multi-state subscription entry %d unpaused", i);
-
-      err = 0;
+        err = notifyMultiStateSub(multiStateSubs.entries + i, pool);
+        if(err < 0)
+          LOG_ERR("ERROR %d: unable to notify for multi-state entry", err);
+      }
     }
   }
 
-  if(err < 0)
+  if(err == -ESRCH)
     LOG_WRN("ERROR %d: unable to find multi-state subscription %p", err, subCallback);
 
   return err;
 }
 
-int datastoreUtilAddUintSub(DatastoreUintSub_t *sub)
+int datastoreUtilAddUintSub(DatastoreUintSub_t *sub, osMemoryPoolId_t pool)
 {
   int err;
 
@@ -833,10 +1008,14 @@ int datastoreUtilAddUintSub(DatastoreUintSub_t *sub)
   memcpy(uintSubs.entries + uintSubs.activeCount, sub, sizeof(DatastoreUintSub_t));
   ++uintSubs.activeCount;
 
+  err = notifyUintSub(sub, pool);
+  if(err < 0)
+    LOG_ERR("ERROR %d: unable to notify for new unsigned integer entry", err);
+
   return 0;
 }
 
-int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused)
+int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
 
@@ -854,15 +1033,21 @@ int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isP
       uintSubs.entries[i].isPaused = isPaused;
 
       if(isPaused)
+      {
         LOG_INF("unsigned integer subscription entry %d paused", i);
+        err = 0;
+      }
       else
+      {
         LOG_INF("unsigned integer subscription entry %d unpaused", i);
-
-      err = 0;
+        err = notifyUintSub(uintSubs.entries + i, pool);
+        if(err < 0)
+          LOG_ERR("ERROR %d: unable to notify for unsigned integer entry", err);
+      }
     }
   }
 
-  if(err < 0)
+  if(err == -ESRCH)
     LOG_WRN("ERROR %d: unable to find unsigned integer subscription %p", err, subCallback);
 
   return err;

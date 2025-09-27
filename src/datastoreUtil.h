@@ -90,115 +90,127 @@ size_t datastoreUtilCalculateBufferSize(size_t datapointCounts[DATAPOINT_TYPE_CO
  * @brief   Add a binary subscription.
  *
  * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub);
+int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Set a binary subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool isPaused);
+int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a button subscription.
  *
  * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub);
+int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Set a button subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool isPaused);
+int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a float subscription.
  *
  * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub);
+int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Set a float subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool isPaused);
+int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a signed integer subscription.
  *
  * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddIntSub(DatastoreIntSub_t *sub);
+int datastoreUtilAddIntSub(DatastoreIntSub_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Set a signed integer subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPaused);
+int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a multi-state subscription.
  *
  * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub);
+int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Set a multi-state subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallback, bool isPaused);
+int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a unsigned integer subscription.
  *
  * @param[in]   sub: The subscription.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddUintSub(DatastoreUintSub_t *sub);
+int datastoreUtilAddUintSub(DatastoreUintSub_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Set a unsigned integer subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
+ * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused);
+int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Read from the datastore.

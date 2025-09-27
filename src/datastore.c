@@ -92,11 +92,9 @@ static void run(void *p1, void *p2, void *p3)
   int errOp = 0;
   DatastoreMsg_t msg;
 
-  // TODO: Initialize the datapoints from the NVM.
-
-  // TODO: Do initial notifications.
-
   LOG_INF("starting thread");
+
+  // TODO: Initialize the datapoints from the NVM.
 
   for(;;)
   {
@@ -215,17 +213,17 @@ int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
 
 int datastoreSubscribeBinary(DatastoreBinarySub_t *sub)
 {
-  return datastoreUtilAddBinarySub(sub);
+  return datastoreUtilAddBinarySub(sub, bufferPool);
 }
 
 int datastorePauseSubBinary(DatastoreBinarySubCb_t subCallback)
 {
-  return datastoreUtilSetBinarySubPauseState(subCallback, true);
+  return datastoreUtilSetBinarySubPauseState(subCallback, true, bufferPool);
 }
 
 int datastoreUnpauseSubBinary(DatastoreBinarySubCb_t subCallback)
 {
-  return datastoreUtilSetBinarySubPauseState(subCallback, false);
+  return datastoreUtilSetBinarySubPauseState(subCallback, false, bufferPool);
 }
 
 int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *response, bool values[])
@@ -292,17 +290,17 @@ int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, s
 
 int datastoreSubscribeButton(DatastoreButtonSub_t *sub)
 {
-  return datastoreUtilAddButtonSub(sub);
+  return datastoreUtilAddButtonSub(sub, bufferPool);
 }
 
 int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback)
 {
-  return datastoreUtilSetButtonSubPauseState(subCallback, true);
+  return datastoreUtilSetButtonSubPauseState(subCallback, true, bufferPool);
 }
 
 int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
 {
-  return datastoreUtilSetButtonSubPauseState(subCallback, false);
+  return datastoreUtilSetButtonSubPauseState(subCallback, false, bufferPool);
 }
 
 int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, ButtonState_t values[])
@@ -369,17 +367,17 @@ int datastoreWriteButton(uint32_t datapointId, ButtonState_t values[], size_t va
 
 int datastoreSubscribeFloat(DatastoreFloatSub_t *sub)
 {
-  return datastoreUtilAddFloatSub(sub);
+  return datastoreUtilAddFloatSub(sub, bufferPool);
 }
 
 int datastorePauseSubFloat(DatastoreFloatSubCb_t subCallback)
 {
-  return datastoreUtilSetFloatSubPauseState(subCallback, true);
+  return datastoreUtilSetFloatSubPauseState(subCallback, true, bufferPool);
 }
 
 int datastoreUnpauseSubFloat(DatastoreFloatSubCb_t subCallback)
 {
-  return datastoreUtilSetFloatSubPauseState(subCallback, false);
+  return datastoreUtilSetFloatSubPauseState(subCallback, false, bufferPool);
 }
 
 int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *response, float values[])
@@ -446,17 +444,17 @@ int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, s
 
 int datastoreSubscribeInt(DatastoreIntSub_t *sub)
 {
-  return datastoreUtilAddIntSub(sub);
+  return datastoreUtilAddIntSub(sub, bufferPool);
 }
 
 int datastorePauseSubInt(DatastoreIntSubCb_t subCallback)
 {
-  return datastoreUtilSetIntSubPauseState(subCallback, true);
+  return datastoreUtilSetIntSubPauseState(subCallback, true, bufferPool);
 }
 
 int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback)
 {
-  return datastoreUtilSetIntSubPauseState(subCallback, false);
+  return datastoreUtilSetIntSubPauseState(subCallback, false, bufferPool);
 }
 
 int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *response, int32_t values[])
@@ -523,17 +521,17 @@ int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, s
 
 int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub)
 {
-  return datastoreUtilAddMultiStateSub(sub);
+  return datastoreUtilAddMultiStateSub(sub, bufferPool);
 }
 
 int datastorePauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
 {
-  return datastoreUtilSetMultiStateSubPauseState(subCallback, true);
+  return datastoreUtilSetMultiStateSubPauseState(subCallback, true, bufferPool);
 }
 
 int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
 {
-  return datastoreUtilSetMultiStateSubPauseState(subCallback, false);
+  return datastoreUtilSetMultiStateSubPauseState(subCallback, false, bufferPool);
 }
 
 int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
@@ -600,17 +598,17 @@ int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t val
 
 int datastoreSubscribeUint(DatastoreUintSub_t *sub)
 {
-  return datastoreUtilAddUintSub(sub);
+  return datastoreUtilAddUintSub(sub, bufferPool);
 }
 
 int datastorePauseSubUint(DatastoreUintSubCb_t subCallback)
 {
-  return datastoreUtilSetUintSubPauseState(subCallback, true);
+  return datastoreUtilSetUintSubPauseState(subCallback, true, bufferPool);
 }
 
 int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback)
 {
-  return datastoreUtilSetUintSubPauseState(subCallback, false);
+  return datastoreUtilSetUintSubPauseState(subCallback, false, bufferPool);
 }
 
 int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])

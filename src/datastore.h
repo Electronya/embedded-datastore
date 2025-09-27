@@ -101,7 +101,7 @@ typedef int (*DatastoreBinarySubCb_t)(bool values[], size_t valCount, osMemoryPo
 /**
  * @brief   The button subscription callback.
  */
-typedef int (*DatastoreButtonSubCb_t)(uint32_t values[], size_t valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreButtonSubCb_t)(ButtonState_t values[], size_t valCount, osMemoryPoolId_t pool);
 
 /**
  * @brief   The float subscription callback.
