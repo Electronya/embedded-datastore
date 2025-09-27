@@ -902,8 +902,8 @@ int datastoreUtilWrite(DatapointType_t type, uint32_t datapointId, DatapointValu
   {
     for(size_t i = 0; i < valCount; ++i)
     {
-      needToNotify = !needToNotify && values[i].uintVal == root[i].value.uintVal ? true : needToNotify;
-      root[i].value = values[i];
+      needToNotify = !needToNotify && values[i].uintVal == root[datapointId + i].value.uintVal ? true : needToNotify;
+      root[datapointId + i].value = values[i];
     }
   }
 
