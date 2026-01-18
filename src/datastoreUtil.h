@@ -97,6 +97,15 @@ size_t datastoreUtilCalculateBufferSize(size_t datapointCounts[DATAPOINT_TYPE_CO
 int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub, osMemoryPoolId_t pool);
 
 /**
+ * @brief   Remove a binary subscription.
+ *
+ * @param[in]   callback: The subscription callback.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilRemoveBinarySub(DatastoreBinarySubCb_t callback);
+
+/**
  * @brief   Set a binary subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
@@ -116,6 +125,15 @@ int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub, osMemoryPoolId_t pool);
+
+/**
+ * @brief   Remove a button subscription.
+ *
+ * @param[in]   callback: The subscription callback.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilRemoveButtonSub(DatastoreButtonSubCb_t callback);
 
 /**
  * @brief   Set a button subscription pause state.
@@ -139,6 +157,15 @@ int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool
 int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub, osMemoryPoolId_t pool);
 
 /**
+ * @brief   Remove a float subscription.
+ *
+ * @param[in]   callback: The subscription callback.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilRemoveFloatSub(DatastoreFloatSubCb_t callback);
+
+/**
  * @brief   Set a float subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
@@ -158,6 +185,15 @@ int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool i
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreUtilAddIntSub(DatastoreIntSub_t *sub, osMemoryPoolId_t pool);
+
+/**
+ * @brief   Remove a signed integer subscription.
+ *
+ * @param[in]   callback: The subscription callback.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilRemoveIntSub(DatastoreIntSubCb_t callback);
 
 /**
  * @brief   Set a signed integer subscription pause state.
@@ -181,6 +217,15 @@ int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPau
 int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub, osMemoryPoolId_t pool);
 
 /**
+ * @brief   Remove a multi-state subscription.
+ *
+ * @param[in]   callback: The subscription callback.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilRemoveMultiStateSub(DatastoreMultiStateSubCb_t callback);
+
+/**
  * @brief   Set a multi-state subscription pause state.
  *
  * @param[in]   subCallback: The subscription callback.
@@ -200,6 +245,15 @@ int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallba
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreUtilAddUintSub(DatastoreUintSub_t *sub, osMemoryPoolId_t pool);
+
+/**
+ * @brief   Remove a unsigned integer subscription.
+ *
+ * @param[in]   callback: The subscription callback.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUtilRemoveUintSub(DatastoreUintSubCb_t callback);
 
 /**
  * @brief   Set a unsigned integer subscription pause state.

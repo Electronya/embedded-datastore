@@ -720,6 +720,34 @@ int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub, osMemoryPoolId_t pool)
   return err;
 }
 
+int datastoreUtilRemoveBinarySub(DatastoreBinarySubCb_t callback)
+{
+  int err = -ESRCH;
+
+  for(size_t i = 0; i < binarySubs.activeCount; ++i)
+  {
+    if(binarySubs.entries[i].callback == callback)
+    {
+      /* Shift remaining subscriptions down */
+      for(size_t j = i; j < binarySubs.activeCount - 1; ++j)
+      {
+        binarySubs.entries[j] = binarySubs.entries[j + 1];
+      }
+
+      --binarySubs.activeCount;
+      err = 0;
+
+      LOG_INF("removed subscription %d", i);
+      break;
+    }
+  }
+
+  if(err < 0)
+    LOG_ERR("ERROR %d: subscription not found", err);
+
+  return err;
+}
+
 int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
@@ -777,6 +805,34 @@ int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub, osMemoryPoolId_t pool)
     LOG_ERR("ERROR %d: unable to notify for new button entry", err);
 
   return 0;
+}
+
+int datastoreUtilRemoveButtonSub(DatastoreButtonSubCb_t callback)
+{
+  int err = -ESRCH;
+
+  for(size_t i = 0; i < buttonSubs.activeCount; ++i)
+  {
+    if(buttonSubs.entries[i].callback == callback)
+    {
+      /* Shift remaining subscriptions down */
+      for(size_t j = i; j < buttonSubs.activeCount - 1; ++j)
+      {
+        buttonSubs.entries[j] = buttonSubs.entries[j + 1];
+      }
+
+      --buttonSubs.activeCount;
+      err = 0;
+
+      LOG_INF("removed subscription %d", i);
+      break;
+    }
+  }
+
+  if(err < 0)
+    LOG_ERR("ERROR %d: subscription not found", err);
+
+  return err;
 }
 
 int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
@@ -838,6 +894,34 @@ int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub, osMemoryPoolId_t pool)
   return 0;
 }
 
+int datastoreUtilRemoveFloatSub(DatastoreFloatSubCb_t callback)
+{
+  int err = -ESRCH;
+
+  for(size_t i = 0; i < floatSubs.activeCount; ++i)
+  {
+    if(floatSubs.entries[i].callback == callback)
+    {
+      /* Shift remaining subscriptions down */
+      for(size_t j = i; j < floatSubs.activeCount - 1; ++j)
+      {
+        floatSubs.entries[j] = floatSubs.entries[j + 1];
+      }
+
+      --floatSubs.activeCount;
+      err = 0;
+
+      LOG_INF("removed subscription %d", i);
+      break;
+    }
+  }
+
+  if(err < 0)
+    LOG_ERR("ERROR %d: subscription not found", err);
+
+  return err;
+}
+
 int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
@@ -895,6 +979,34 @@ int datastoreUtilAddIntSub(DatastoreIntSub_t *sub, osMemoryPoolId_t pool)
     LOG_ERR("ERROR %d: unable to notify for new signed integer entry", err);
 
   return 0;
+}
+
+int datastoreUtilRemoveIntSub(DatastoreIntSubCb_t callback)
+{
+  int err = -ESRCH;
+
+  for(size_t i = 0; i < intSubs.activeCount; ++i)
+  {
+    if(intSubs.entries[i].callback == callback)
+    {
+      /* Shift remaining subscriptions down */
+      for(size_t j = i; j < intSubs.activeCount - 1; ++j)
+      {
+        intSubs.entries[j] = intSubs.entries[j + 1];
+      }
+
+      --intSubs.activeCount;
+      err = 0;
+
+      LOG_INF("removed subscription %d", i);
+      break;
+    }
+  }
+
+  if(err < 0)
+    LOG_ERR("ERROR %d: subscription not found", err);
+
+  return err;
 }
 
 int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
@@ -956,6 +1068,34 @@ int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub, osMemoryPoolId_
   return 0;
 }
 
+int datastoreUtilRemoveMultiStateSub(DatastoreMultiStateSubCb_t callback)
+{
+  int err = -ESRCH;
+
+  for(size_t i = 0; i < multiStateSubs.activeCount; ++i)
+  {
+    if(multiStateSubs.entries[i].callback == callback)
+    {
+      /* Shift remaining subscriptions down */
+      for(size_t j = i; j < multiStateSubs.activeCount - 1; ++j)
+      {
+        multiStateSubs.entries[j] = multiStateSubs.entries[j + 1];
+      }
+
+      --multiStateSubs.activeCount;
+      err = 0;
+
+      LOG_INF("removed subscription %d", i);
+      break;
+    }
+  }
+
+  if(err < 0)
+    LOG_ERR("ERROR %d: subscription not found", err);
+
+  return err;
+}
+
 int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)
 {
   int err = -ESRCH;
@@ -1013,6 +1153,34 @@ int datastoreUtilAddUintSub(DatastoreUintSub_t *sub, osMemoryPoolId_t pool)
     LOG_ERR("ERROR %d: unable to notify for new unsigned integer entry", err);
 
   return 0;
+}
+
+int datastoreUtilRemoveUintSub(DatastoreUintSubCb_t callback)
+{
+  int err = -ESRCH;
+
+  for(size_t i = 0; i < uintSubs.activeCount; ++i)
+  {
+    if(uintSubs.entries[i].callback == callback)
+    {
+      /* Shift remaining subscriptions down */
+      for(size_t j = i; j < uintSubs.activeCount - 1; ++j)
+      {
+        uintSubs.entries[j] = uintSubs.entries[j + 1];
+      }
+
+      --uintSubs.activeCount;
+      err = 0;
+
+      LOG_INF("removed subscription %d", i);
+      break;
+    }
+  }
+
+  if(err < 0)
+    LOG_ERR("ERROR %d: subscription not found", err);
+
+  return err;
 }
 
 int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool)

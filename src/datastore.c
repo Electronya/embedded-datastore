@@ -216,6 +216,11 @@ int datastoreSubscribeBinary(DatastoreBinarySub_t *sub)
   return datastoreUtilAddBinarySub(sub, bufferPool);
 }
 
+int datastoreUnsubscribeBinary(DatastoreBinarySubCb_t callback)
+{
+  return datastoreUtilRemoveBinarySub(callback);
+}
+
 int datastorePauseSubBinary(DatastoreBinarySubCb_t subCallback)
 {
   return datastoreUtilSetBinarySubPauseState(subCallback, true, bufferPool);
@@ -291,6 +296,11 @@ int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, s
 int datastoreSubscribeButton(DatastoreButtonSub_t *sub)
 {
   return datastoreUtilAddButtonSub(sub, bufferPool);
+}
+
+int datastoreUnsubscribeButton(DatastoreButtonSubCb_t callback)
+{
+  return datastoreUtilRemoveButtonSub(callback);
 }
 
 int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback)
@@ -370,6 +380,11 @@ int datastoreSubscribeFloat(DatastoreFloatSub_t *sub)
   return datastoreUtilAddFloatSub(sub, bufferPool);
 }
 
+int datastoreUnsubscribeFloat(DatastoreFloatSubCb_t callback)
+{
+  return datastoreUtilRemoveFloatSub(callback);
+}
+
 int datastorePauseSubFloat(DatastoreFloatSubCb_t subCallback)
 {
   return datastoreUtilSetFloatSubPauseState(subCallback, true, bufferPool);
@@ -445,6 +460,11 @@ int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, s
 int datastoreSubscribeInt(DatastoreIntSub_t *sub)
 {
   return datastoreUtilAddIntSub(sub, bufferPool);
+}
+
+int datastoreUnsubscribeInt(DatastoreIntSubCb_t callback)
+{
+  return datastoreUtilRemoveIntSub(callback);
 }
 
 int datastorePauseSubInt(DatastoreIntSubCb_t subCallback)
@@ -524,6 +544,11 @@ int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub)
   return datastoreUtilAddMultiStateSub(sub, bufferPool);
 }
 
+int datastoreUnsubscribeMultiState(DatastoreMultiStateSubCb_t callback)
+{
+  return datastoreUtilRemoveMultiStateSub(callback);
+}
+
 int datastorePauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
 {
   return datastoreUtilSetMultiStateSubPauseState(subCallback, true, bufferPool);
@@ -599,6 +624,11 @@ int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t val
 int datastoreSubscribeUint(DatastoreUintSub_t *sub)
 {
   return datastoreUtilAddUintSub(sub, bufferPool);
+}
+
+int datastoreUnsubscribeUint(DatastoreUintSubCb_t callback)
+{
+  return datastoreUtilRemoveUintSub(callback);
 }
 
 int datastorePauseSubUint(DatastoreUintSubCb_t subCallback)

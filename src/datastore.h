@@ -238,6 +238,15 @@ int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
 int datastoreSubscribeBinary(DatastoreBinarySub_t *sub);
 
 /**
+ * @brief   Unsubscribe to binary datapoint.
+ *
+ * @param[in]   callback: The callback of the subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnsubscribeBinary(DatastoreBinarySubCb_t callback);
+
+/**
  * @brief   Pause subscription to binary datapoint.
  *
  * @param[in]   subCallback: The subscription.
@@ -287,6 +296,15 @@ int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, s
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreSubscribeButton(DatastoreButtonSub_t *sub);
+
+/**
+ * @brief   Unsubscribe to button datapoint.
+ *
+ * @param[in]   callback: The callback of the subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnsubscribeButton(DatastoreButtonSubCb_t callback);
 
 /**
  * @brief   Pause subscription to button datapoint.
@@ -340,6 +358,15 @@ int datastoreWriteButton(uint32_t datapointId, ButtonState_t values[], size_t va
 int datastoreSubscribeFloat(DatastoreFloatSub_t *sub);
 
 /**
+ * @brief   Unsubscribe to float datapoint.
+ *
+ * @param[in]   callback: The callback of the subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnsubscribeFloat(DatastoreFloatSubCb_t callback);
+
+/**
  * @brief   Pause subscription to float datapoint.
  *
  * @param[in]   subCallback: The subscription.
@@ -389,6 +416,15 @@ int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, s
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreSubscribeInt(DatastoreIntSub_t *sub);
+
+/**
+ * @brief   Unsubscribe to signed integer datapoint.
+ *
+ * @param[in]   callback: The callback of the subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnsubscribeInt(DatastoreIntSubCb_t callback);
 
 /**
  * @brief   Pause subscription to signed integer datapoint.
@@ -442,6 +478,15 @@ int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, s
 int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub);
 
 /**
+ * @brief   Unsubscribe to multi-state datapoint.
+ *
+ * @param[in]   callback: The callback of the subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnsubscribeMultiState(DatastoreMultiStateSubCb_t callback);
+
+/**
  * @brief   Pause subscription to multi-state datapoint.
  *
  * @param[in]   subCallback: The subscription.
@@ -491,6 +536,15 @@ int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t val
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreSubscribeUint(DatastoreUintSub_t *sub);
+
+/**
+ * @brief   Unsubscribe to unsigned integer datapoint.
+ *
+ * @param[in]   callback: The callback of the subscription.
+ *
+ * @return  0 if successful, the error code otherwise.
+ */
+int datastoreUnsubscribeUint(DatastoreUintSubCb_t callback);
 
 /**
  * @brief   Pause subscription to unsigned integer datapoint.
