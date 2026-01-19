@@ -59,8 +59,8 @@ typedef struct
   DatastoreMsgtype_t msgType;
   DatapointType_t datapointType;
   uint32_t datapointId;
-  DatapointValue_t *values;
   size_t valCount;
+  SrvMsgPayload_t *payload;
   struct k_msgq *response;
 } DatastoreMsg_t;
 
@@ -108,10 +108,11 @@ static void run(void *p1, void *p2, void *p3)
     switch(msg.msgType)
     {
       case DATASTORE_READ:
-        errOp = datastoreUtilRead(msg.datapointType, msg.datapointId, msg.valCount, msg.values);
+        errOp = datastoreUtilRead(msg.datapointType, msg.datapointId, msg.valCount, msg.payload->data);
       break;
       case DATASTORE_WRITE:
-        errOp = datastoreUtilWrite(msg.datapointType, msg.datapointId, msg.values, msg.valCount, bufferPool);
+        errOp = datastoreUtilWrite(msg.datapointType, msg.datapointId, msg.payload->data, msg.valCount, bufferPool);
+        osMemoryPoolFree(msg.payload->poolId, msg.payload);
       break;
       default:
         LOG_WRN("unsupported message type %d", msg.msgType);
@@ -171,70 +172,110 @@ int datastoreInit(size_t maxSubs[DATAPOINT_TYPE_COUNT], uint32_t priority, k_tid
 }
 
 int datastoreRead(DatapointType_t datapointType, uint32_t datapointId, size_t valCount,
-                  struct k_msgq *response, DatapointValue_t values[])
+                  struct k_msgq *response, Data_t values[])
 {
   int err;
   int resStatus = 0;
   DatastoreMsg_t msg = {.msgType = DATASTORE_READ, .datapointType = datapointType, .datapointId = datapointId,
-                        .values = values, .valCount = valCount, .response = response };
+                        .valCount = valCount, .payload = NULL, .response = response };
+
+  msg.payload = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!msg.payload)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
+    return err;
+  }
+
+  msg.payload->poolId = bufferPool;
+  msg.payload->dataLen = msg.valCount * sizeof(Data_t);
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
+  {
+    osMemoryPoolFree(bufferPool, msg.payload);
     return err;
+  }
 
   err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
   if(err < 0)
+  {
+    osMemoryPoolFree(bufferPool, msg.payload);
     return err;
+  }
+
+  if(resStatus == 0)
+    memcpy(values, msg.payload->data, msg.payload->dataLen);
+
+  osMemoryPoolFree(bufferPool, msg.payload);
 
   return resStatus;
 }
 
 int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
-                   DatapointValue_t values[], size_t valCount, struct k_msgq *response)
+                   Data_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
   int resStatus = 0;
   DatastoreMsg_t msg = {.msgType = DATASTORE_WRITE, .datapointType = datapointType, .datapointId = datapointId,
-                        .values = values, .valCount = valCount, .response = response };
+                        .valCount = valCount, .payload = NULL, .response = response };
+
+  msg.payload = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
+  if(!msg.payload)
+  {
+    err = -ENOSPC;
+    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
+    return err;
+  }
+
+  msg.payload->poolId = bufferPool;
+  msg.payload->dataLen = msg.valCount * sizeof(Data_t);
+
+  memcpy(msg.payload->data, values, msg.payload->dataLen);
 
   err = k_msgq_put(&datastoreQueue, &msg, K_NO_WAIT);
   if(err < 0)
+  {
+    osMemoryPoolFree(bufferPool, msg.payload);
     return err;
+  }
 
   if(response)
   {
     err = k_msgq_get(response, &resStatus, K_MSEC(DATASTORE_RESPONSE_TIMEOUT));
     if(err < 0)
+    {
+      osMemoryPoolFree(bufferPool, msg.payload);
       return err;
+    }
   }
 
   return resStatus;
 }
 
-int datastoreSubscribeBinary(DatastoreBinarySub_t *sub)
+int datastoreSubscribeBinary(DatastoreSubEntry_t *sub)
 {
   return datastoreUtilAddBinarySub(sub, bufferPool);
 }
 
-int datastoreUnsubscribeBinary(DatastoreBinarySubCb_t callback)
+int datastoreUnsubscribeBinary(DatastoreSubCb_t callback)
 {
   return datastoreUtilRemoveBinarySub(callback);
 }
 
-int datastorePauseSubBinary(DatastoreBinarySubCb_t subCallback)
+int datastorePauseSubBinary(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetBinarySubPauseState(subCallback, true, bufferPool);
+  return datastoreUtilSetBinarySubPauseState(callback, true, bufferPool);
 }
 
-int datastoreUnpauseSubBinary(DatastoreBinarySubCb_t subCallback)
+int datastoreUnpauseSubBinary(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetBinarySubPauseState(subCallback, false, bufferPool);
+  return datastoreUtilSetBinarySubPauseState(callback, false, bufferPool);
 }
 
 int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *response, bool values[])
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0 || !response)
   {
@@ -243,22 +284,9 @@ int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *re
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  err = datastoreRead(DATAPOINT_BINARY, datapointId, valCount, response, buffer);
+  err = datastoreRead(DATAPOINT_BINARY, datapointId, valCount, response, (Data_t *)values);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to read binary datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-  else
-    for(size_t i = 0; i < valCount; ++i)
-      values[i] = (bool)buffer[i].uintVal;
-
-  osMemoryPoolFree(bufferPool, buffer);
 
   return err;
 }
@@ -266,7 +294,6 @@ int datastoreReadBinary(uint32_t datapointId, size_t valCount, struct k_msgq *re
 int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, struct k_msgq *response)
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0)
   {
@@ -275,48 +302,36 @@ int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, s
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    buffer[i].uintVal = (uint32_t)values[i];
-
-  err = datastoreWrite(DATAPOINT_BINARY, datapointId, buffer, valCount, response);
+  err = datastoreWrite(DATAPOINT_BINARY, datapointId, (Data_t *)values, valCount, response);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to write binary datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
 
   return err;
 }
 
-int datastoreSubscribeButton(DatastoreButtonSub_t *sub)
+int datastoreSubscribeButton(DatastoreSubEntry_t *sub)
 {
   return datastoreUtilAddButtonSub(sub, bufferPool);
 }
 
-int datastoreUnsubscribeButton(DatastoreButtonSubCb_t callback)
+int datastoreUnsubscribeButton(DatastoreSubCb_t callback)
 {
   return datastoreUtilRemoveButtonSub(callback);
 }
 
-int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback)
+int datastorePauseSubButton(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetButtonSubPauseState(subCallback, true, bufferPool);
+  return datastoreUtilSetButtonSubPauseState(callback, true, bufferPool);
 }
 
-int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback)
+int datastoreUnpauseSubButton(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetButtonSubPauseState(subCallback, false, bufferPool);
+  return datastoreUtilSetButtonSubPauseState(callback, false, bufferPool);
 }
 
 int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *response, ButtonState_t values[])
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0 || !response)
   {
@@ -325,22 +340,9 @@ int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *re
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  err = datastoreRead(DATAPOINT_BUTTON, datapointId, valCount, response, buffer);
+  err = datastoreRead(DATAPOINT_BUTTON, datapointId, valCount, response, (Data_t *)values);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to read button datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-  else
-    for(size_t i = 0; i < valCount; ++i)
-      values[i] = (ButtonState_t)buffer[i].uintVal;
-
-  osMemoryPoolFree(bufferPool, buffer);
 
   return err;
 }
@@ -348,7 +350,6 @@ int datastoreReadButton(uint32_t datapointId, size_t valCount, struct k_msgq *re
 int datastoreWriteButton(uint32_t datapointId, ButtonState_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0)
   {
@@ -357,48 +358,36 @@ int datastoreWriteButton(uint32_t datapointId, ButtonState_t values[], size_t va
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    buffer[i].uintVal = (uint32_t)values[i];
-
-  err = datastoreWrite(DATAPOINT_BUTTON, datapointId, buffer, valCount, response);
+  err = datastoreWrite(DATAPOINT_BUTTON, datapointId, (Data_t *)values, valCount, response);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to write button datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
 
   return err;
 }
 
-int datastoreSubscribeFloat(DatastoreFloatSub_t *sub)
+int datastoreSubscribeFloat(DatastoreSubEntry_t *sub)
 {
   return datastoreUtilAddFloatSub(sub, bufferPool);
 }
 
-int datastoreUnsubscribeFloat(DatastoreFloatSubCb_t callback)
+int datastoreUnsubscribeFloat(DatastoreSubCb_t callback)
 {
   return datastoreUtilRemoveFloatSub(callback);
 }
 
-int datastorePauseSubFloat(DatastoreFloatSubCb_t subCallback)
+int datastorePauseSubFloat(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetFloatSubPauseState(subCallback, true, bufferPool);
+  return datastoreUtilSetFloatSubPauseState(callback, true, bufferPool);
 }
 
-int datastoreUnpauseSubFloat(DatastoreFloatSubCb_t subCallback)
+int datastoreUnpauseSubFloat(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetFloatSubPauseState(subCallback, false, bufferPool);
+  return datastoreUtilSetFloatSubPauseState(callback, false, bufferPool);
 }
 
 int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *response, float values[])
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0 || !response)
   {
@@ -407,22 +396,9 @@ int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *res
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  err = datastoreRead(DATAPOINT_FLOAT, datapointId, valCount, response, buffer);
+  err = datastoreRead(DATAPOINT_FLOAT, datapointId, valCount, response, (Data_t *)values);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to read float datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-  else
-    for(size_t i = 0; i < valCount; ++i)
-      values[i] = buffer[i].floatVal;
-
-  osMemoryPoolFree(bufferPool, buffer);
 
   return err;
 }
@@ -430,7 +406,6 @@ int datastoreReadFloat(uint32_t datapointId, size_t valCount, struct k_msgq *res
 int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, struct k_msgq *response)
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0)
   {
@@ -439,48 +414,36 @@ int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, s
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    buffer[i].floatVal = values[i];
-
-  err = datastoreWrite(DATAPOINT_FLOAT, datapointId, buffer, valCount, response);
+  err = datastoreWrite(DATAPOINT_FLOAT, datapointId, (Data_t *)values, valCount, response);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to write float datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
 
   return err;
 }
 
-int datastoreSubscribeInt(DatastoreIntSub_t *sub)
+int datastoreSubscribeInt(DatastoreSubEntry_t *sub)
 {
   return datastoreUtilAddIntSub(sub, bufferPool);
 }
 
-int datastoreUnsubscribeInt(DatastoreIntSubCb_t callback)
+int datastoreUnsubscribeInt(DatastoreSubCb_t callback)
 {
   return datastoreUtilRemoveIntSub(callback);
 }
 
-int datastorePauseSubInt(DatastoreIntSubCb_t subCallback)
+int datastorePauseSubInt(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetIntSubPauseState(subCallback, true, bufferPool);
+  return datastoreUtilSetIntSubPauseState(callback, true, bufferPool);
 }
 
-int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback)
+int datastoreUnpauseSubInt(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetIntSubPauseState(subCallback, false, bufferPool);
+  return datastoreUtilSetIntSubPauseState(callback, false, bufferPool);
 }
 
 int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *response, int32_t values[])
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0 || !response)
   {
@@ -489,22 +452,9 @@ int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *respo
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  err = datastoreRead(DATAPOINT_INT, datapointId, valCount, response, buffer);
+  err = datastoreRead(DATAPOINT_INT, datapointId, valCount, response, (Data_t *)values);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to read signed integer datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-  else
-    for(size_t i = 0; i < valCount; ++i)
-      values[i] = buffer[i].intVal;
-
-  osMemoryPoolFree(bufferPool, buffer);
 
   return err;
 }
@@ -512,7 +462,6 @@ int datastoreReadInt(uint32_t datapointId, size_t valCount, struct k_msgq *respo
 int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0)
   {
@@ -521,48 +470,36 @@ int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, s
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    buffer[i].intVal = values[i];
-
-  err = datastoreWrite(DATAPOINT_INT, datapointId, buffer, valCount, response);
+  err = datastoreWrite(DATAPOINT_INT, datapointId, (Data_t *)values, valCount, response);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to write signed integer datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
 
   return err;
 }
 
-int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub)
+int datastoreSubscribeMultiState(DatastoreSubEntry_t *sub)
 {
   return datastoreUtilAddMultiStateSub(sub, bufferPool);
 }
 
-int datastoreUnsubscribeMultiState(DatastoreMultiStateSubCb_t callback)
+int datastoreUnsubscribeMultiState(DatastoreSubCb_t callback)
 {
   return datastoreUtilRemoveMultiStateSub(callback);
 }
 
-int datastorePauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
+int datastorePauseSubMultiState(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetMultiStateSubPauseState(subCallback, true, bufferPool);
+  return datastoreUtilSetMultiStateSubPauseState(callback, true, bufferPool);
 }
 
-int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback)
+int datastoreUnpauseSubMultiState(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetMultiStateSubPauseState(subCallback, false, bufferPool);
+  return datastoreUtilSetMultiStateSubPauseState(callback, false, bufferPool);
 }
 
 int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0 || !response)
   {
@@ -571,22 +508,9 @@ int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  err = datastoreRead(DATAPOINT_MULTI_STATE, datapointId, valCount, response, buffer);
+  err = datastoreRead(DATAPOINT_MULTI_STATE, datapointId, valCount, response, (Data_t *)values);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to read multi-state datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-  else
-    for(size_t i = 0; i < valCount; ++i)
-      values[i] = buffer[i].uintVal;
-
-  osMemoryPoolFree(bufferPool, buffer);
 
   return err;
 }
@@ -594,7 +518,6 @@ int datastoreReadMultiState(uint32_t datapointId, size_t valCount, struct k_msgq
 int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0)
   {
@@ -603,48 +526,36 @@ int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t val
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    buffer[i].uintVal = values[i];
-
-  err = datastoreWrite(DATAPOINT_MULTI_STATE, datapointId, buffer, valCount, response);
+  err = datastoreWrite(DATAPOINT_MULTI_STATE, datapointId, (Data_t *)values, valCount, response);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to write multi-state datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
 
   return err;
 }
 
-int datastoreSubscribeUint(DatastoreUintSub_t *sub)
+int datastoreSubscribeUint(DatastoreSubEntry_t *sub)
 {
   return datastoreUtilAddUintSub(sub, bufferPool);
 }
 
-int datastoreUnsubscribeUint(DatastoreUintSubCb_t callback)
+int datastoreUnsubscribeUint(DatastoreSubCb_t callback)
 {
   return datastoreUtilRemoveUintSub(callback);
 }
 
-int datastorePauseSubUint(DatastoreUintSubCb_t subCallback)
+int datastorePauseSubUint(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetUintSubPauseState(subCallback, true, bufferPool);
+  return datastoreUtilSetUintSubPauseState(callback, true, bufferPool);
 }
 
-int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback)
+int datastoreUnpauseSubUint(DatastoreSubCb_t callback)
 {
-  return datastoreUtilSetUintSubPauseState(subCallback, false, bufferPool);
+  return datastoreUtilSetUintSubPauseState(callback, false, bufferPool);
 }
 
 int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *response, uint32_t values[])
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0 || !response)
   {
@@ -653,22 +564,9 @@ int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *resp
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  err = datastoreRead(DATAPOINT_UINT, datapointId, valCount, response, buffer);
+  err = datastoreRead(DATAPOINT_UINT, datapointId, valCount, response, (Data_t *)values);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to read unsigned integer datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
-  else
-    for(size_t i = 0; i < valCount; ++i)
-      values[i] = buffer[i].uintVal;
-
-  osMemoryPoolFree(bufferPool, buffer);
 
   return err;
 }
@@ -676,7 +574,6 @@ int datastoreReadUint(uint32_t datapointId, size_t valCount, struct k_msgq *resp
 int datastoreWriteUint(uint32_t datapointId, uint32_t values[], size_t valCount, struct k_msgq *response)
 {
   int err;
-  DatapointValue_t *buffer;
 
   if(!values || valCount == 0)
   {
@@ -685,18 +582,7 @@ int datastoreWriteUint(uint32_t datapointId, uint32_t values[], size_t valCount,
     return err;
   }
 
-  buffer = osMemoryPoolAlloc(bufferPool, DATASTORE_BUFFER_ALLOC_TIMEOUT);
-  if(!buffer)
-  {
-    err = -ENOSPC;
-    LOG_ERR("ERROR %d: unable to allocate a buffer for operation", err);
-    return err;
-  }
-
-  for(size_t i = 0; i < valCount; ++i)
-    buffer[i].uintVal = values[i];
-
-  err = datastoreWrite(DATAPOINT_UINT, datapointId, buffer, valCount, response);
+  err = datastoreWrite(DATAPOINT_UINT, datapointId, (Data_t *)values, valCount, response);
   if(err < 0)
     LOG_ERR("ERROR %d: unable to write unsigned integer datapoint %d up to datapoint %d", err, datapointId, datapointId + valCount);
 

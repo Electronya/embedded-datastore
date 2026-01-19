@@ -94,7 +94,7 @@ size_t datastoreUtilCalculateBufferSize(size_t datapointCounts[DATAPOINT_TYPE_CO
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub, osMemoryPoolId_t pool);
+int datastoreUtilAddBinarySub(DatastoreSubEntry_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Remove a binary subscription.
@@ -103,18 +103,18 @@ int datastoreUtilAddBinarySub(DatastoreBinarySub_t *sub, osMemoryPoolId_t pool);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilRemoveBinarySub(DatastoreBinarySubCb_t callback);
+int datastoreUtilRemoveBinarySub(DatastoreSubCb_t callback);
 
 /**
  * @brief   Set a binary subscription pause state.
  *
- * @param[in]   subCallback: The subscription callback.
+ * @param[in]   callback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
  * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
+int datastoreUtilSetBinarySubPauseState(DatastoreSubCb_t callback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a button subscription.
@@ -124,7 +124,7 @@ int datastoreUtilSetBinarySubPauseState(DatastoreBinarySubCb_t subCallback, bool
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub, osMemoryPoolId_t pool);
+int datastoreUtilAddButtonSub(DatastoreSubEntry_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Remove a button subscription.
@@ -133,18 +133,18 @@ int datastoreUtilAddButtonSub(DatastoreButtonSub_t *sub, osMemoryPoolId_t pool);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilRemoveButtonSub(DatastoreButtonSubCb_t callback);
+int datastoreUtilRemoveButtonSub(DatastoreSubCb_t callback);
 
 /**
  * @brief   Set a button subscription pause state.
  *
- * @param[in]   subCallback: The subscription callback.
+ * @param[in]   callback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
  * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
+int datastoreUtilSetButtonSubPauseState(DatastoreSubCb_t callback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a float subscription.
@@ -154,7 +154,7 @@ int datastoreUtilSetButtonSubPauseState(DatastoreButtonSubCb_t subCallback, bool
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub, osMemoryPoolId_t pool);
+int datastoreUtilAddFloatSub(DatastoreSubEntry_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Remove a float subscription.
@@ -163,18 +163,18 @@ int datastoreUtilAddFloatSub(DatastoreFloatSub_t *sub, osMemoryPoolId_t pool);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilRemoveFloatSub(DatastoreFloatSubCb_t callback);
+int datastoreUtilRemoveFloatSub(DatastoreSubCb_t callback);
 
 /**
  * @brief   Set a float subscription pause state.
  *
- * @param[in]   subCallback: The subscription callback.
+ * @param[in]   callback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
  * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
+int datastoreUtilSetFloatSubPauseState(DatastoreSubCb_t callback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a signed integer subscription.
@@ -184,7 +184,7 @@ int datastoreUtilSetFloatSubPauseState(DatastoreFloatSubCb_t subCallback, bool i
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddIntSub(DatastoreIntSub_t *sub, osMemoryPoolId_t pool);
+int datastoreUtilAddIntSub(DatastoreSubEntry_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Remove a signed integer subscription.
@@ -193,18 +193,18 @@ int datastoreUtilAddIntSub(DatastoreIntSub_t *sub, osMemoryPoolId_t pool);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilRemoveIntSub(DatastoreIntSubCb_t callback);
+int datastoreUtilRemoveIntSub(DatastoreSubCb_t callback);
 
 /**
  * @brief   Set a signed integer subscription pause state.
  *
- * @param[in]   subCallback: The subscription callback.
+ * @param[in]   callback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
  * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
+int datastoreUtilSetIntSubPauseState(DatastoreSubCb_t callback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a multi-state subscription.
@@ -214,7 +214,7 @@ int datastoreUtilSetIntSubPauseState(DatastoreIntSubCb_t subCallback, bool isPau
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub, osMemoryPoolId_t pool);
+int datastoreUtilAddMultiStateSub(DatastoreSubEntry_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Remove a multi-state subscription.
@@ -223,18 +223,18 @@ int datastoreUtilAddMultiStateSub(DatastoreMultiStateSub_t *sub, osMemoryPoolId_
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilRemoveMultiStateSub(DatastoreMultiStateSubCb_t callback);
+int datastoreUtilRemoveMultiStateSub(DatastoreSubCb_t callback);
 
 /**
  * @brief   Set a multi-state subscription pause state.
  *
- * @param[in]   subCallback: The subscription callback.
+ * @param[in]   callback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
  * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
+int datastoreUtilSetMultiStateSubPauseState(DatastoreSubCb_t callback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Add a unsigned integer subscription.
@@ -244,7 +244,7 @@ int datastoreUtilSetMultiStateSubPauseState(DatastoreMultiStateSubCb_t subCallba
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilAddUintSub(DatastoreUintSub_t *sub, osMemoryPoolId_t pool);
+int datastoreUtilAddUintSub(DatastoreSubEntry_t *sub, osMemoryPoolId_t pool);
 
 /**
  * @brief   Remove a unsigned integer subscription.
@@ -253,18 +253,18 @@ int datastoreUtilAddUintSub(DatastoreUintSub_t *sub, osMemoryPoolId_t pool);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilRemoveUintSub(DatastoreUintSubCb_t callback);
+int datastoreUtilRemoveUintSub(DatastoreSubCb_t callback);
 
 /**
  * @brief   Set a unsigned integer subscription pause state.
  *
- * @param[in]   subCallback: The subscription callback.
+ * @param[in]   callback: The subscription callback.
  * @param[in]   isPaused: The pause flag.
  * @param[in]   pool: The buffer pool.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isPaused, osMemoryPoolId_t pool);
+int datastoreUtilSetUintSubPauseState(DatastoreSubCb_t callback, bool isPaused, osMemoryPoolId_t pool);
 
 /**
  * @brief   Read from the datastore.
@@ -276,7 +276,7 @@ int datastoreUtilSetUintSubPauseState(DatastoreUintSubCb_t subCallback, bool isP
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilRead(DatapointType_t type, uint32_t datapointId, size_t valCount, DatapointValue_t values[]);
+int datastoreUtilRead(DatapointType_t type, uint32_t datapointId, size_t valCount, Data_t values[]);
 
 /**
  * @brief   Write to the datastore.
@@ -289,7 +289,7 @@ int datastoreUtilRead(DatapointType_t type, uint32_t datapointId, size_t valCoun
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUtilWrite(DatapointType_t type, uint32_t datapointId, DatapointValue_t values[],
+int datastoreUtilWrite(DatapointType_t type, uint32_t datapointId, Data_t values[],
                        size_t valCount, osMemoryPoolId_t pool);
 
 /**

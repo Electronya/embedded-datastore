@@ -20,6 +20,7 @@
 #include <zephyr/portability/cmsis_os2.h>
 
 #include "datastoreMeta.h"
+#include "serviceCommon.h"
 
 /**
  * @brief   Binary datapoint IDs.
@@ -94,100 +95,20 @@ enum UintDatapoint
 };
 
 /**
- * @brief   The binary subscription callback.
+ * @brief   The subscription callback.
  */
-typedef int (*DatastoreBinarySubCb_t)(bool values[], size_t valCount, osMemoryPoolId_t pool);
+typedef int (*DatastoreSubCb_t)(SrvMsgPayload_t *payload, size_t valCount);
 
 /**
- * @brief   The button subscription callback.
- */
-typedef int (*DatastoreButtonSubCb_t)(ButtonState_t values[], size_t valCount, osMemoryPoolId_t pool);
-
-/**
- * @brief   The float subscription callback.
- */
-typedef int (*DatastoreFloatSubCb_t)(float values[], size_t valCount, osMemoryPoolId_t pool);
-
-/**
- * @brief   The signed integer subscription callback.
- */
-typedef int (*DatastoreIntSubCb_t)(int32_t values[], size_t valCount, osMemoryPoolId_t pool);
-
-/**
- * @brief   The multi-state subscription callback.
- */
-typedef int (*DatastoreMultiStateSubCb_t)(uint32_t values[], size_t valCount, osMemoryPoolId_t pool);
-
-/**
- * @brief   The unsigned integer subscription callback.
- */
-typedef int (*DatastoreUintSubCb_t)(uint32_t values[], size_t valCount, osMemoryPoolId_t pool);
-
-/**
- * @brief   The binary subscription record.
+ * @brief   The subscription record.
  */
 typedef struct
 {
   uint32_t datapointId;                 /**< The datapoint ID */
   size_t valCount;                      /**< The datapoint count */
   bool isPaused;                        /**< The paused subscription flag */
-  DatastoreBinarySubCb_t callback;      /**< The subscription callback */
-} DatastoreBinarySub_t;
-
-/**
- * @brief   The button subscription record.
- */
-typedef struct
-{
-  uint32_t datapointId;                 /**< The datapoint ID */
-  size_t valCount;                      /**< The datapoint count */
-  bool isPaused;                        /**< The paused subscription flag */
-  DatastoreButtonSubCb_t callback;      /**< The subscription callback */
-} DatastoreButtonSub_t;
-
-/**
- * @brief   The float subscription record.
- */
-typedef struct
-{
-  uint32_t datapointId;                 /**< The datapoint ID */
-  size_t valCount;                      /**< The datapoint count */
-  bool isPaused;                        /**< The paused subscription flag */
-  DatastoreFloatSubCb_t callback;       /**< The subscription callback */
-} DatastoreFloatSub_t;
-
-/**
- * @brief   The integer subscription record.
- */
-typedef struct
-{
-  uint32_t datapointId;                 /**< The datapoint ID */
-  size_t valCount;                      /**< The datapoint count */
-  bool isPaused;                        /**< The paused subscription flag */
-  DatastoreIntSubCb_t callback;         /**< The subscription callback */
-} DatastoreIntSub_t;
-
-/**
- * @brief   The multi-state subscription record.
- */
-typedef struct
-{
-  uint32_t datapointId;                 /**< The datapoint ID */
-  size_t valCount;                      /**< The datapoint count */
-  bool isPaused;                        /**< The paused subscription flag */
-  DatastoreMultiStateSubCb_t callback;  /**< The subscription callback */
-} DatastoreMultiStateSub_t;
-
-/**
- * @brief   The unsigned integer subscription record.
- */
-typedef struct
-{
-  uint32_t datapointId;                 /**< The datapoint ID */
-  size_t valCount;                      /**< The datapoint count */
-  bool isPaused;                        /**< The paused subscription flag */
-  DatastoreUintSubCb_t callback;        /**< The subscription callback */
-} DatastoreUintSub_t;
+  DatastoreSubCb_t callback;            /**< The subscription callback */
+} DatastoreSubEntry_t;
 
 /**
  * @brief   Initialize the datastore.
@@ -212,7 +133,7 @@ int datastoreInit(size_t maxSubs[DATAPOINT_TYPE_COUNT], uint32_t priority, k_tid
  * @return  0 if successful, the error code otherwise.
  */
 int datastoreRead(DatapointType_t datapointType, uint32_t datapointId, size_t valCount,
-                  struct k_msgq *response, DatapointValue_t values[]);
+                  struct k_msgq *response, Data_t values[]);
 
 /**
  * @brief   Write a datapoint
@@ -226,7 +147,7 @@ int datastoreRead(DatapointType_t datapointType, uint32_t datapointId, size_t va
  * @return  0 if successful, the error code.
  */
 int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
-                   DatapointValue_t values[], size_t valCount, struct k_msgq *response);
+                   Data_t values[], size_t valCount, struct k_msgq *response);
 
 /**
  * @brief   Subscribe to binary datapoint.
@@ -235,7 +156,7 @@ int datastoreWrite(DatapointType_t datapointType, uint32_t datapointId,
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreSubscribeBinary(DatastoreBinarySub_t *sub);
+int datastoreSubscribeBinary(DatastoreSubEntry_t *sub);
 
 /**
  * @brief   Unsubscribe to binary datapoint.
@@ -244,25 +165,25 @@ int datastoreSubscribeBinary(DatastoreBinarySub_t *sub);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnsubscribeBinary(DatastoreBinarySubCb_t callback);
+int datastoreUnsubscribeBinary(DatastoreSubCb_t callback);
 
 /**
  * @brief   Pause subscription to binary datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastorePauseSubBinary(DatastoreBinarySubCb_t subCallback);
+int datastorePauseSubBinary(DatastoreSubCb_t callback);
 
 /**
  * @brief   Unpause subscription to binary datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnpauseSubBinary(DatastoreBinarySubCb_t subCallback);
+int datastoreUnpauseSubBinary(DatastoreSubCb_t callback);
 
 /**
  * @brief   Read a binary datapoint.
@@ -295,7 +216,7 @@ int datastoreWriteBinary(uint32_t datapointId, bool values[], size_t valCount, s
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreSubscribeButton(DatastoreButtonSub_t *sub);
+int datastoreSubscribeButton(DatastoreSubEntry_t *sub);
 
 /**
  * @brief   Unsubscribe to button datapoint.
@@ -304,25 +225,25 @@ int datastoreSubscribeButton(DatastoreButtonSub_t *sub);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnsubscribeButton(DatastoreButtonSubCb_t callback);
+int datastoreUnsubscribeButton(DatastoreSubCb_t callback);
 
 /**
  * @brief   Pause subscription to button datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastorePauseSubButton(DatastoreButtonSubCb_t subCallback);
+int datastorePauseSubButton(DatastoreSubCb_t callback);
 
 /**
  * @brief   Unpause subscription to button datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnpauseSubButton(DatastoreButtonSubCb_t subCallback);
+int datastoreUnpauseSubButton(DatastoreSubCb_t callback);
 
 /**
  * @brief   Read a button datapoint.
@@ -355,7 +276,7 @@ int datastoreWriteButton(uint32_t datapointId, ButtonState_t values[], size_t va
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreSubscribeFloat(DatastoreFloatSub_t *sub);
+int datastoreSubscribeFloat(DatastoreSubEntry_t *sub);
 
 /**
  * @brief   Unsubscribe to float datapoint.
@@ -364,25 +285,25 @@ int datastoreSubscribeFloat(DatastoreFloatSub_t *sub);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnsubscribeFloat(DatastoreFloatSubCb_t callback);
+int datastoreUnsubscribeFloat(DatastoreSubCb_t callback);
 
 /**
  * @brief   Pause subscription to float datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastorePauseSubFloat(DatastoreFloatSubCb_t subCallback);
+int datastorePauseSubFloat(DatastoreSubCb_t callback);
 
 /**
  * @brief   Unpause subscription to float datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnpauseSubFloat(DatastoreFloatSubCb_t subCallback);
+int datastoreUnpauseSubFloat(DatastoreSubCb_t callback);
 
 /**
  * @brief   Read a float datapoint.
@@ -415,7 +336,7 @@ int datastoreWriteFloat(uint32_t datapointId, float values[], size_t valCount, s
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreSubscribeInt(DatastoreIntSub_t *sub);
+int datastoreSubscribeInt(DatastoreSubEntry_t *sub);
 
 /**
  * @brief   Unsubscribe to signed integer datapoint.
@@ -424,25 +345,25 @@ int datastoreSubscribeInt(DatastoreIntSub_t *sub);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnsubscribeInt(DatastoreIntSubCb_t callback);
+int datastoreUnsubscribeInt(DatastoreSubCb_t callback);
 
 /**
  * @brief   Pause subscription to signed integer datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastorePauseSubInt(DatastoreIntSubCb_t subCallback);
+int datastorePauseSubInt(DatastoreSubCb_t callback);
 
 /**
  * @brief   Unpause subscription to signed integer datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnpauseSubInt(DatastoreIntSubCb_t subCallback);
+int datastoreUnpauseSubInt(DatastoreSubCb_t callback);
 
 /**
  * @brief   Read a integer datapoint.
@@ -475,7 +396,7 @@ int datastoreWriteInt(uint32_t datapointId, int32_t values[], size_t valCount, s
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub);
+int datastoreSubscribeMultiState(DatastoreSubEntry_t *sub);
 
 /**
  * @brief   Unsubscribe to multi-state datapoint.
@@ -484,25 +405,25 @@ int datastoreSubscribeMultiState(DatastoreMultiStateSub_t *sub);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnsubscribeMultiState(DatastoreMultiStateSubCb_t callback);
+int datastoreUnsubscribeMultiState(DatastoreSubCb_t callback);
 
 /**
  * @brief   Pause subscription to multi-state datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastorePauseSubMultiState(DatastoreMultiStateSubCb_t subCallback);
+int datastorePauseSubMultiState(DatastoreSubCb_t callback);
 
 /**
  * @brief   Unpause subscription to multi-state datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnpauseSubMultiState(DatastoreMultiStateSubCb_t subCallback);
+int datastoreUnpauseSubMultiState(DatastoreSubCb_t callback);
 
 /**
  * @brief   Read a multi-state datapoint.
@@ -535,7 +456,7 @@ int datastoreWriteMultiState(uint32_t datapointId, uint32_t values[], size_t val
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreSubscribeUint(DatastoreUintSub_t *sub);
+int datastoreSubscribeUint(DatastoreSubEntry_t *sub);
 
 /**
  * @brief   Unsubscribe to unsigned integer datapoint.
@@ -544,25 +465,25 @@ int datastoreSubscribeUint(DatastoreUintSub_t *sub);
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnsubscribeUint(DatastoreUintSubCb_t callback);
+int datastoreUnsubscribeUint(DatastoreSubCb_t callback);
 
 /**
  * @brief   Pause subscription to unsigned integer datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastorePauseSubUint(DatastoreUintSubCb_t subCallback);
+int datastorePauseSubUint(DatastoreSubCb_t callback);
 
 /**
  * @brief   Unpause subscription to unsigned integer datapoint.
  *
- * @param[in]   subCallback: The subscription.
+ * @param[in]   callback: The subscription.
  *
  * @return  0 if successful, the error code otherwise.
  */
-int datastoreUnpauseSubUint(DatastoreUintSubCb_t subCallback);
+int datastoreUnpauseSubUint(DatastoreSubCb_t callback);
 
 /**
  * @brief   Read an unsigned integer datapoint.

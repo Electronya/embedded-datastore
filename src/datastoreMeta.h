@@ -18,6 +18,8 @@
 
 #include <zephyr/kernel.h>
 
+#include "serviceCommon.h"
+
 #define DATASTORE_LOGGER_NAME datastore
 
 /**
@@ -83,7 +85,7 @@ typedef enum
   MULTI_STATE_FOURTH_STATE_COUNT
 } MultiStateFourthStates_t;
 
-typedef enum
+typedef enum __attribute__((mode(SI)))
 {
   BUTTON_UNPRESSED = 0,
   BUTTON_SHORT_PRESSED,
@@ -106,21 +108,11 @@ typedef enum
 } DatapointType_t;
 
 /**
- * @brief   Datapoint value union.
- */
-typedef union
-{
-  float floatVal;                 /**< Float value. */
-  uint32_t uintVal;               /**< unsigned integer/multi-state/button value. */
-  int32_t intVal;                 /**< signed integer value. */
-} DatapointValue_t;
-
-/**
  * @brief   Datastore datapoint.
  */
 typedef struct
 {
-  DatapointValue_t value;         /**< The value. */
+  Data_t value;                   /**< The value. */
   uint32_t flags;                 /**< The datapoint flags. */
 } Datapoint_t;
 
