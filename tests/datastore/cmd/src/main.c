@@ -269,6 +269,69 @@ ZTEST(datastore_cmd_tests, test_to_upper)
 }
 
 /**
+ * @test  The convertButtonStateStr function must return -EINVAL when the
+ *        string is not a valid button state.
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_invalid)
+{
+  ButtonState_t value;
+  char str[] = "invalid_state";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, -EINVAL, "convertButtonStateStr should return -EINVAL for invalid string");
+}
+
+/**
+ * @test  The convertButtonStateStr function must return 0 and set the value
+ *        to BUTTON_UNPRESSED when the string is "unpressed".
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_unpressed)
+{
+  ButtonState_t value;
+  char str[] = "unpressed";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
+  zassert_equal(value, BUTTON_UNPRESSED, "value should be BUTTON_UNPRESSED");
+}
+
+/**
+ * @test  The convertButtonStateStr function must return 0 and set the value
+ *        to BUTTON_SHORT_PRESSED when the string is "short_pressed".
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_short_pressed)
+{
+  ButtonState_t value;
+  char str[] = "short_pressed";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
+  zassert_equal(value, BUTTON_SHORT_PRESSED, "value should be BUTTON_SHORT_PRESSED");
+}
+
+/**
+ * @test  The convertButtonStateStr function must return 0 and set the value
+ *        to BUTTON_LONG_PRESSED when the string is "long_pressed".
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_long_pressed)
+{
+  ButtonState_t value;
+  char str[] = "long_pressed";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
+  zassert_equal(value, BUTTON_LONG_PRESSED, "value should be BUTTON_LONG_PRESSED");
+}
+
+/**
  * @test  The execListBinary function must return 0 and print the header
  *        followed by all binary datapoint names.
  */
