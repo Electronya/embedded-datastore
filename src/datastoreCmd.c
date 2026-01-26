@@ -286,12 +286,12 @@ static int execWriteBinary(const struct shell *shell, size_t argc, char **argv)
     return err;
   }
 
-  if(valCount < argc - WRITE_VALUE_FIRST_IDX)
+  if(argc - WRITE_VALUE_FIRST_IDX < valCount)
   {
     shell_error(shell, "FAIL: not enough value provided (%d) for the requested value to write (%d)",
-                valCount, argc - WRITE_VALUE_FIRST_IDX);
+                argc - WRITE_VALUE_FIRST_IDX, valCount);
     shell_help(shell);
-    return err;
+    return -EINVAL;
   }
 
   for(size_t i = 0; i < valCount; ++i)
@@ -468,12 +468,12 @@ static int execWriteButton(const struct shell *shell, size_t argc, char **argv)
     return err;
   }
 
-  if(valCount < argc - WRITE_VALUE_FIRST_IDX)
+  if(argc - WRITE_VALUE_FIRST_IDX < valCount)
   {
     shell_error(shell, "FAIL: not enough value provided (%d) for the requested value to write (%d)",
-                valCount, argc - WRITE_VALUE_FIRST_IDX);
+                argc - WRITE_VALUE_FIRST_IDX, valCount);
     shell_help(shell);
-    return err;
+    return -EINVAL;
   }
 
   for(size_t i = 0; i < valCount; ++i)
@@ -620,12 +620,12 @@ static int execWriteFloat(const struct shell *shell, size_t argc, char **argv)
     return err;
   }
 
-  if(valCount < argc - WRITE_VALUE_FIRST_IDX)
+  if(argc - WRITE_VALUE_FIRST_IDX < valCount)
   {
     shell_error(shell, "FAIL: not enough value provided (%d) for the requested value to write (%d)",
-                valCount, argc - WRITE_VALUE_FIRST_IDX);
+                argc - WRITE_VALUE_FIRST_IDX, valCount);
     shell_help(shell);
-    return err;
+    return -EINVAL;
   }
 
   for(size_t i = 0; i < valCount; ++i)
@@ -770,12 +770,12 @@ static int execWriteInt(const struct shell *shell, size_t argc, char **argv)
     return err;
   }
 
-  if(valCount < argc - WRITE_VALUE_FIRST_IDX)
+  if(argc - WRITE_VALUE_FIRST_IDX < valCount)
   {
     shell_error(shell, "FAIL: not enough value provided (%d) for the requested value to write (%d)",
-                valCount, argc - WRITE_VALUE_FIRST_IDX);
+                argc - WRITE_VALUE_FIRST_IDX, valCount);
     shell_help(shell);
-    return err;
+    return -EINVAL;
   }
 
   for(size_t i = 0; i < valCount; ++i)
@@ -919,12 +919,12 @@ static int execWriteMultiState(const struct shell *shell, size_t argc, char **ar
     return err;
   }
 
-  if(valCount < argc - WRITE_VALUE_FIRST_IDX)
+  if(argc - WRITE_VALUE_FIRST_IDX < valCount)
   {
     shell_error(shell, "FAIL: not enough value provided (%d) for the requested value to write (%d)",
-                valCount, argc - WRITE_VALUE_FIRST_IDX);
+                argc - WRITE_VALUE_FIRST_IDX, valCount);
     shell_help(shell);
-    return err;
+    return -EINVAL;
   }
 
   for(size_t i = 0; i < valCount; ++i)
@@ -1068,12 +1068,12 @@ static int execWriteUint(const struct shell *shell, size_t argc, char **argv)
     return err;
   }
 
-  if(valCount < argc - WRITE_VALUE_FIRST_IDX)
+  if(argc - WRITE_VALUE_FIRST_IDX < valCount)
   {
     shell_error(shell, "FAIL: not enough value provided (%d) for the requested value to write (%d)",
-                valCount, argc - WRITE_VALUE_FIRST_IDX);
+                argc - WRITE_VALUE_FIRST_IDX, valCount);
     shell_help(shell);
-    return err;
+    return -EINVAL;
   }
 
   for(size_t i = 0; i < valCount; ++i)
