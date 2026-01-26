@@ -1122,4 +1122,28 @@ ZTEST(datastore_cmd_tests, test_exec_write_button_success)
                "shell_info output should contain last datapoint name");
 }
 
+/**
+ * @test  The execListFloat function must return 0 and print the header
+ *        followed by all float datapoint names.
+ */
+ZTEST(datastore_cmd_tests, test_exec_list_float)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char *argv[] = {"ls"};
+  int result;
+
+  result = execListFloat(shell, 1, argv);
+
+  zassert_equal(result, 0, "execListFloat should return 0");
+  zassert_equal(shell_info_call_count, FLOAT_DATAPOINT_COUNT + 1,
+                "shell_info should be called for header + each datapoint");
+  zassert_str_equal(captured_shell_output[0], "List of float datapoint:",
+                    "first shell_info output should be the header");
+  zassert_str_equal(captured_shell_output[1], "FLOAT_FIRST_DATAPOINT",
+                    "second shell_info output should be FLOAT_FIRST_DATAPOINT");
+  zassert_str_equal(captured_shell_output[2], "FLOAT_SECOND_DATAPOINT",
+                    "third shell_info output should be FLOAT_SECOND_DATAPOINT");
+}
+
+
 ZTEST_SUITE(datastore_cmd_tests, NULL, cmd_tests_setup, cmd_tests_before, NULL, NULL);
