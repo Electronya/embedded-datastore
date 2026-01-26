@@ -139,6 +139,22 @@ static int datastoreReadButton_success(uint32_t datapointId, size_t valCount,
   return 0;
 }
 
+/* Custom fake for datastoreReadFloat that fills in float values */
+static int datastoreReadFloat_success(uint32_t datapointId, size_t valCount,
+                                      struct k_msgq *resQueue, float *values)
+{
+  ARG_UNUSED(datapointId);
+  ARG_UNUSED(resQueue);
+
+  /* Fill with different float values for testing */
+  for(size_t i = 0; i < valCount; ++i)
+  {
+    values[i] = 12.5f + (float)i * 10.0f;
+  }
+
+  return 0;
+}
+
 /* Captured values from datastoreWriteButton call */
 static ButtonState_t captured_button_write_values[BUTTON_DATAPOINT_COUNT];
 static size_t captured_button_write_count;
@@ -1145,5 +1161,133 @@ ZTEST(datastore_cmd_tests, test_exec_list_float)
                     "third shell_info output should be FLOAT_SECOND_DATAPOINT");
 }
 
+/**
+ * @test  The execReadFloat function must return -ESRCH and print an error
+ *        when the datapoint name is not found.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_float_unknown_datapoint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "unknown_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  result = execReadFloat(shell, 2, argv);
+
+  zassert_equal(result, -ESRCH, "execReadFloat should return -ESRCH for unknown datapoint");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "UNKNOWN_DATAPOINT") != NULL,
+               "shell_error output should contain the datapoint name");
+}
+
+/**
+ * @test  The execReadFloat function must return -EINVAL and print an error
+ *        when the value count argument is invalid.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_float_invalid_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "invalid";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.custom_fake = shell_strtoul_with_error;
+
+  result = execReadFloat(shell, 3, argv);
+
+  zassert_equal(result, -EINVAL, "execReadFloat should return -EINVAL for invalid value count");
+  zassert_equal(shell_strtoul_fake.call_count, 1,
+                "shell_strtoul should be called once");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "invalid") != NULL,
+               "shell_error output should contain the invalid argument");
+}
+
+/**
+ * @test  The execReadFloat function must return an error and print an error
+ *        when datastoreReadFloat fails.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_float_datastore_read_fails)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "2";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  datastoreReadFloat_fake.return_val = -EIO;
+
+  result = execReadFloat(shell, 3, argv);
+
+  zassert_not_equal(result, 0, "execReadFloat should return error when datastoreReadFloat fails");
+  zassert_equal(datastoreReadFloat_fake.call_count, 1,
+                "datastoreReadFloat should be called once");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "operation fail") != NULL,
+               "shell_error output should contain 'operation fail'");
+}
+
+/**
+ * @test  The execReadFloat function must successfully read multiple float values
+ *        and print success message with each value.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_float_success)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "2";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  datastoreReadFloat_fake.custom_fake = datastoreReadFloat_success;
+
+  result = execReadFloat(shell, 3, argv);
+
+  zassert_equal(result, 0, "execReadFloat should return success");
+  zassert_equal(datastoreReadFloat_fake.call_count, 1,
+                "datastoreReadFloat should be called once");
+  zassert_equal(datastoreReadFloat_fake.arg0_val, 0,
+                "datastoreReadFloat should be called with datapoint ID 0");
+  zassert_equal(datastoreReadFloat_fake.arg1_val, 2,
+                "datastoreReadFloat should be called with value count 2");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_help_fake.call_count, 0,
+                "shell_help should not be called");
+  zassert_equal(shell_info_call_count, 3,
+                "shell_info should be called three times (header + 2 values)");
+  zassert_true(strstr(captured_shell_output[0], "SUCCESS") == captured_shell_output[0],
+               "first shell_info output should start with SUCCESS");
+  zassert_true(strstr(captured_shell_output[1], "FLOAT_FIRST_DATAPOINT") != NULL,
+               "second shell_info output should contain first datapoint name");
+  zassert_true(strstr(captured_shell_output[1], "12.5") != NULL,
+               "second shell_info output should contain the float value");
+  zassert_true(strstr(captured_shell_output[2], "FLOAT_SECOND_DATAPOINT") != NULL,
+               "third shell_info output should contain second datapoint name");
+  zassert_true(strstr(captured_shell_output[2], "22.5") != NULL,
+               "third shell_info output should contain the float value");
+}
 
 ZTEST_SUITE(datastore_cmd_tests, NULL, cmd_tests_setup, cmd_tests_before, NULL, NULL);
