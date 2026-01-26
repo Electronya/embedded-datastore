@@ -171,6 +171,22 @@ static int datastoreReadInt_success(uint32_t datapointId, size_t valCount,
   return 0;
 }
 
+/* Custom fake for datastoreReadMultiState that fills in multi-state values */
+static int datastoreReadMultiState_success(uint32_t datapointId, size_t valCount,
+                                           struct k_msgq *resQueue, uint32_t *values)
+{
+  ARG_UNUSED(datapointId);
+  ARG_UNUSED(resQueue);
+
+  /* Fill with different multi-state values for testing */
+  for(size_t i = 0; i < valCount; ++i)
+  {
+    values[i] = i;
+  }
+
+  return 0;
+}
+
 /* Captured values from datastoreWriteButton call */
 static ButtonState_t captured_button_write_values[BUTTON_DATAPOINT_COUNT];
 static size_t captured_button_write_count;
@@ -221,6 +237,24 @@ static int datastoreWriteInt_capture(uint32_t datapointId, int32_t *values,
   captured_int_write_count = valCount;
   for(size_t i = 0; i < valCount; ++i)
     captured_int_write_values[i] = values[i];
+
+  return 0;
+}
+
+/* Captured values from datastoreWriteMultiState call */
+static uint32_t captured_multi_state_write_values[MULTI_STATE_DATAPOINT_COUNT];
+static size_t captured_multi_state_write_count;
+
+/* Custom fake for datastoreWriteMultiState that captures the values */
+static int datastoreWriteMultiState_capture(uint32_t datapointId, uint32_t *values,
+                                            size_t valCount, struct k_msgq *resQueue)
+{
+  ARG_UNUSED(datapointId);
+  ARG_UNUSED(resQueue);
+
+  captured_multi_state_write_count = valCount;
+  for(size_t i = 0; i < valCount; ++i)
+    captured_multi_state_write_values[i] = values[i];
 
   return 0;
 }
@@ -340,6 +374,9 @@ static void cmd_tests_before(void *f)
 
   memset(captured_int_write_values, 0, sizeof(captured_int_write_values));
   captured_int_write_count = 0;
+
+  memset(captured_multi_state_write_values, 0, sizeof(captured_multi_state_write_values));
+  captured_multi_state_write_count = 0;
 }
 
 /**
@@ -464,7 +501,11 @@ static long shell_strtol_success(const char *str, int base, int *err)
   *err = 0;
 
   /* Simple parsing for test values */
-  if(strcmp(str, "100") == 0)
+  if(strcmp(str, "0") == 0)
+    return 0;
+  else if(strcmp(str, "1") == 0)
+    return 1;
+  else if(strcmp(str, "100") == 0)
     return 100;
   else if(strcmp(str, "200") == 0)
     return 200;
@@ -1871,6 +1912,328 @@ ZTEST(datastore_cmd_tests, test_exec_write_int_success)
   zassert_equal(captured_int_write_count, 2, "should have captured 2 values");
   zassert_equal(captured_int_write_values[0], 100, "first value should be 100");
   zassert_equal(captured_int_write_values[1], 200, "second value should be 200");
+
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 1,
+                "shell_info should be called once");
+  zassert_true(strstr(captured_shell_output[0], "SUCCESS") == captured_shell_output[0],
+               "shell_info output should start with SUCCESS");
+  zassert_true(strstr(captured_shell_output[0], "write operation") != NULL,
+               "shell_info output should contain 'write operation'");
+}
+
+/**
+ * @test execListMultiState should list all multi-state datapoints.
+ */
+ZTEST(datastore_cmd_tests, test_exec_list_multi_state)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "list";
+  char *argv[] = {arg0};
+  int result;
+
+  result = execListMultiState(shell, 1, argv);
+
+  zassert_equal(result, 0, "execListMultiState should return 0");
+  zassert_equal(shell_info_call_count, MULTI_STATE_DATAPOINT_COUNT + 1,
+                "shell_info should be called for header + each datapoint");
+  zassert_str_equal(captured_shell_output[0], "List of multi-state datapoint:",
+                    "first shell_info output should be the header");
+  zassert_str_equal(captured_shell_output[1], "MULTI_STATE_FIRST_DATAPOINT",
+                    "second shell_info output should be MULTI_STATE_FIRST_DATAPOINT");
+  zassert_str_equal(captured_shell_output[2], "MULTI_STATE_SECOND_DATAPOINT",
+                    "third shell_info output should be MULTI_STATE_SECOND_DATAPOINT");
+}
+
+/**
+ * @test execReadMultiState should return error for unknown datapoint.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_multi_state_unknown_datapoint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "unknown_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  result = execReadMultiState(shell, 2, argv);
+
+  zassert_equal(result, -ESRCH, "execReadMultiState should return -ESRCH for unknown datapoint");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "UNKNOWN_DATAPOINT") != NULL,
+               "shell_error output should contain the datapoint name");
+}
+
+/**
+ * @test execReadMultiState should return error for invalid value count.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_multi_state_invalid_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "invalid";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.custom_fake = shell_strtoul_with_error;
+
+  result = execReadMultiState(shell, 3, argv);
+
+  zassert_not_equal(result, 0, "execReadMultiState should return error for invalid value count");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "invalid value count") != NULL,
+               "shell_error output should contain 'invalid value count'");
+}
+
+/**
+ * @test execReadMultiState should return error when datastore read fails.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_multi_state_datastore_read_fails)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "1";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.return_val = 1;
+  datastoreReadMultiState_fake.return_val = -EINVAL;
+
+  result = execReadMultiState(shell, 3, argv);
+
+  zassert_not_equal(result, 0, "execReadMultiState should return error when datastore read fails");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "read operation fail") != NULL,
+               "shell_error output should contain 'read operation fail'");
+}
+
+/**
+ * @test execReadMultiState should successfully read multiple multi-state values.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_multi_state_success)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "2";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  datastoreReadMultiState_fake.custom_fake = datastoreReadMultiState_success;
+
+  result = execReadMultiState(shell, 3, argv);
+
+  zassert_equal(result, 0, "execReadMultiState should return success");
+  zassert_equal(datastoreReadMultiState_fake.call_count, 1,
+                "datastoreReadMultiState should be called once");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 3,
+                "shell_info should be called 3 times (header + 2 values)");
+  zassert_true(strstr(captured_shell_output[0], "SUCCESS") == captured_shell_output[0],
+               "first shell_info output should start with SUCCESS");
+  zassert_true(strstr(captured_shell_output[0], "here are the values read") != NULL,
+               "first shell_info output should contain 'here are the values read'");
+  zassert_true(strstr(captured_shell_output[1], "MULTI_STATE_FIRST_DATAPOINT") != NULL,
+               "second shell_info output should contain datapoint name");
+  zassert_true(strstr(captured_shell_output[1], "0") != NULL,
+               "second shell_info output should contain value 0");
+  zassert_true(strstr(captured_shell_output[2], "MULTI_STATE_SECOND_DATAPOINT") != NULL,
+               "third shell_info output should contain datapoint name");
+  zassert_true(strstr(captured_shell_output[2], "1") != NULL,
+               "third shell_info output should contain value 1");
+}
+
+/**
+ * @test execWriteMultiState should return error for unknown datapoint.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_multi_state_unknown_datapoint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "unknown_datapoint";
+  char arg2[] = "1";
+  char arg3[] = "0";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 1;
+
+  result = execWriteMultiState(shell, 4, argv);
+
+  zassert_equal(result, -ESRCH, "execWriteMultiState should return -ESRCH for unknown datapoint");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "UNKNOWN_DATAPOINT") != NULL,
+               "shell_error output should contain the datapoint name");
+}
+
+/**
+ * @test execWriteMultiState should return error for invalid value count.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_multi_state_invalid_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "invalid";
+  char arg3[] = "0";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.custom_fake = shell_strtoul_with_error;
+
+  result = execWriteMultiState(shell, 4, argv);
+
+  zassert_not_equal(result, 0, "execWriteMultiState should return error for invalid value count");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "invalid value count") != NULL,
+               "shell_error output should contain 'invalid value count'");
+}
+
+/**
+ * @test execWriteMultiState should return error when not enough values provided.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_multi_state_not_enough_values)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "0";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+
+  result = execWriteMultiState(shell, 4, argv);
+
+  zassert_equal(result, -EINVAL, "execWriteMultiState should return -EINVAL when not enough values provided");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "not enough value provided") != NULL,
+               "shell_error output should contain 'not enough value provided'");
+}
+
+/**
+ * @test execWriteMultiState should return error for invalid multi-state value.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_multi_state_invalid_multi_state_value)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "0";
+  char arg4[] = "invalid_value";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  shell_strtol_fake.custom_fake = shell_strtol_with_error;
+
+  result = execWriteMultiState(shell, 5, argv);
+
+  zassert_not_equal(result, 0, "execWriteMultiState should return error for invalid multi-state value");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "bad multi-state value") != NULL,
+               "shell_error output should contain 'bad multi-state value'");
+}
+
+/**
+ * @test execWriteMultiState should return error when datastore write fails.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_multi_state_datastore_write_fails)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "1";
+  char arg3[] = "0";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 1;
+  datastoreWriteMultiState_fake.return_val = -EINVAL;
+
+  result = execWriteMultiState(shell, 4, argv);
+
+  zassert_not_equal(result, 0, "execWriteMultiState should return error when datastore write fails");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "operation fail") != NULL,
+               "shell_error output should contain 'operation fail'");
+}
+
+/**
+ * @test execWriteMultiState should successfully write multiple multi-state values.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_multi_state_success)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "multi_state_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "0";
+  char arg4[] = "1";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  shell_strtol_fake.custom_fake = shell_strtol_success;
+  datastoreWriteMultiState_fake.custom_fake = datastoreWriteMultiState_capture;
+
+  result = execWriteMultiState(shell, 5, argv);
+
+  zassert_equal(result, 0, "execWriteMultiState should return 0 on success");
+  zassert_equal(datastoreWriteMultiState_fake.call_count, 1,
+                "datastoreWriteMultiState should be called once");
+
+  /* Verify the captured values from datastoreWriteMultiState */
+  zassert_equal(captured_multi_state_write_count, 2, "should have captured 2 values");
+  zassert_equal(captured_multi_state_write_values[0], 0, "first value should be 0");
+  zassert_equal(captured_multi_state_write_values[1], 1, "second value should be 1");
 
   zassert_equal(shell_error_call_count, 0,
                 "shell_error should not be called");
