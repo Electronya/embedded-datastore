@@ -269,69 +269,6 @@ ZTEST(datastore_cmd_tests, test_to_upper)
 }
 
 /**
- * @test  The convertButtonStateStr function must return -EINVAL when the
- *        string is not a valid button state.
- */
-ZTEST(datastore_cmd_tests, test_convert_button_state_str_invalid)
-{
-  ButtonState_t value;
-  char str[] = "invalid_state";
-  int result;
-
-  result = convertButtonStateStr(str, &value);
-
-  zassert_equal(result, -EINVAL, "convertButtonStateStr should return -EINVAL for invalid string");
-}
-
-/**
- * @test  The convertButtonStateStr function must return 0 and set the value
- *        to BUTTON_UNPRESSED when the string is "unpressed".
- */
-ZTEST(datastore_cmd_tests, test_convert_button_state_str_unpressed)
-{
-  ButtonState_t value;
-  char str[] = "unpressed";
-  int result;
-
-  result = convertButtonStateStr(str, &value);
-
-  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
-  zassert_equal(value, BUTTON_UNPRESSED, "value should be BUTTON_UNPRESSED");
-}
-
-/**
- * @test  The convertButtonStateStr function must return 0 and set the value
- *        to BUTTON_SHORT_PRESSED when the string is "short_pressed".
- */
-ZTEST(datastore_cmd_tests, test_convert_button_state_str_short_pressed)
-{
-  ButtonState_t value;
-  char str[] = "short_pressed";
-  int result;
-
-  result = convertButtonStateStr(str, &value);
-
-  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
-  zassert_equal(value, BUTTON_SHORT_PRESSED, "value should be BUTTON_SHORT_PRESSED");
-}
-
-/**
- * @test  The convertButtonStateStr function must return 0 and set the value
- *        to BUTTON_LONG_PRESSED when the string is "long_pressed".
- */
-ZTEST(datastore_cmd_tests, test_convert_button_state_str_long_pressed)
-{
-  ButtonState_t value;
-  char str[] = "long_pressed";
-  int result;
-
-  result = convertButtonStateStr(str, &value);
-
-  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
-  zassert_equal(value, BUTTON_LONG_PRESSED, "value should be BUTTON_LONG_PRESSED");
-}
-
-/**
  * @test  The execListBinary function must return 0 and print the header
  *        followed by all binary datapoint names.
  */
@@ -729,6 +666,92 @@ ZTEST(datastore_cmd_tests, test_exec_write_binary_success)
                "shell_info output should contain first datapoint name");
   zassert_true(strstr(captured_shell_output[0], "BINARY_THIRD_DATAPOINT") != NULL,
                "shell_info output should contain last datapoint name");
+}
+
+/**
+ * @test  The convertButtonStateStr function must return -EINVAL when the
+ *        string is not a valid button state.
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_invalid)
+{
+  ButtonState_t value;
+  char str[] = "invalid_state";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, -EINVAL, "convertButtonStateStr should return -EINVAL for invalid string");
+}
+
+/**
+ * @test  The convertButtonStateStr function must return 0 and set the value
+ *        to BUTTON_UNPRESSED when the string is "unpressed".
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_unpressed)
+{
+  ButtonState_t value;
+  char str[] = "unpressed";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
+  zassert_equal(value, BUTTON_UNPRESSED, "value should be BUTTON_UNPRESSED");
+}
+
+/**
+ * @test  The convertButtonStateStr function must return 0 and set the value
+ *        to BUTTON_SHORT_PRESSED when the string is "short_pressed".
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_short_pressed)
+{
+  ButtonState_t value;
+  char str[] = "short_pressed";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
+  zassert_equal(value, BUTTON_SHORT_PRESSED, "value should be BUTTON_SHORT_PRESSED");
+}
+
+/**
+ * @test  The convertButtonStateStr function must return 0 and set the value
+ *        to BUTTON_LONG_PRESSED when the string is "long_pressed".
+ */
+ZTEST(datastore_cmd_tests, test_convert_button_state_str_long_pressed)
+{
+  ButtonState_t value;
+  char str[] = "long_pressed";
+  int result;
+
+  result = convertButtonStateStr(str, &value);
+
+  zassert_equal(result, 0, "convertButtonStateStr should return 0 for valid string");
+  zassert_equal(value, BUTTON_LONG_PRESSED, "value should be BUTTON_LONG_PRESSED");
+}
+
+/**
+ * @test  The execListButton function must return 0 and print the header
+ *        followed by all button datapoint names.
+ */
+ZTEST(datastore_cmd_tests, test_exec_list_button)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char *argv[] = {"ls"};
+  int result;
+
+  result = execListButton(shell, 1, argv);
+
+  zassert_equal(result, 0, "execListButton should return 0");
+  zassert_equal(shell_info_call_count, BUTTON_DATAPOINT_COUNT + 1,
+                "shell_info should be called for header + each datapoint");
+  zassert_str_equal(captured_shell_output[0], "List of button datapoint:",
+                    "first shell_info output should be the header");
+  zassert_str_equal(captured_shell_output[1], "BUTTON_FIRST_DATAPOINT",
+                    "second shell_info output should be BUTTON_FIRST_DATAPOINT");
+  zassert_str_equal(captured_shell_output[2], "BUTTON_SECOND_DATAPOINT",
+                    "third shell_info output should be BUTTON_SECOND_DATAPOINT");
 }
 
 ZTEST_SUITE(datastore_cmd_tests, NULL, cmd_tests_setup, cmd_tests_before, NULL, NULL);
