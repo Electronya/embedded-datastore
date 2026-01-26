@@ -974,7 +974,7 @@ static int execListUint(const struct shell *shell, size_t argc, char **argv)
   ARG_UNUSED(argc);
   ARG_UNUSED(argv);
 
-  shell_info(shell, "List of int datapoint:");
+  shell_info(shell, "List of unsigned int datapoint:");
 
   for(size_t i = 0; i < UINT_DATAPOINT_COUNT; ++i)
     shell_info(shell, "%s", uintNames[i]);

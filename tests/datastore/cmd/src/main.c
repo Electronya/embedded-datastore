@@ -187,6 +187,22 @@ static int datastoreReadMultiState_success(uint32_t datapointId, size_t valCount
   return 0;
 }
 
+/* Custom fake for datastoreReadUint that fills in uint values */
+static int datastoreReadUint_success(uint32_t datapointId, size_t valCount,
+                                     struct k_msgq *resQueue, uint32_t *values)
+{
+  ARG_UNUSED(datapointId);
+  ARG_UNUSED(resQueue);
+
+  /* Fill with different uint values for testing */
+  for(size_t i = 0; i < valCount; ++i)
+  {
+    values[i] = 1000 + i * 100;
+  }
+
+  return 0;
+}
+
 /* Captured values from datastoreWriteButton call */
 static ButtonState_t captured_button_write_values[BUTTON_DATAPOINT_COUNT];
 static size_t captured_button_write_count;
@@ -255,6 +271,24 @@ static int datastoreWriteMultiState_capture(uint32_t datapointId, uint32_t *valu
   captured_multi_state_write_count = valCount;
   for(size_t i = 0; i < valCount; ++i)
     captured_multi_state_write_values[i] = values[i];
+
+  return 0;
+}
+
+/* Captured values from datastoreWriteUint call */
+static uint32_t captured_uint_write_values[UINT_DATAPOINT_COUNT];
+static size_t captured_uint_write_count;
+
+/* Custom fake for datastoreWriteUint that captures the values */
+static int datastoreWriteUint_capture(uint32_t datapointId, uint32_t *values,
+                                      size_t valCount, struct k_msgq *resQueue)
+{
+  ARG_UNUSED(datapointId);
+  ARG_UNUSED(resQueue);
+
+  captured_uint_write_count = valCount;
+  for(size_t i = 0; i < valCount; ++i)
+    captured_uint_write_values[i] = values[i];
 
   return 0;
 }
@@ -377,6 +411,9 @@ static void cmd_tests_before(void *f)
 
   memset(captured_multi_state_write_values, 0, sizeof(captured_multi_state_write_values));
   captured_multi_state_write_count = 0;
+
+  memset(captured_uint_write_values, 0, sizeof(captured_uint_write_values));
+  captured_uint_write_count = 0;
 }
 
 /**
@@ -483,6 +520,25 @@ static unsigned long shell_strtoul_with_error(const char *str, int base, int *er
   return 0;
 }
 
+/* Custom fake for shell_strtoul that succeeds on first call, fails on second */
+static unsigned long shell_strtoul_fail_on_second(const char *str, int base, int *err)
+{
+  ARG_UNUSED(str);
+  ARG_UNUSED(base);
+
+  /* First call succeeds (for value count), second call fails (for uint value) */
+  if(shell_strtoul_fake.call_count == 0)
+  {
+    *err = 0;
+    return 2;
+  }
+  else
+  {
+    *err = -EINVAL;
+    return 0;
+  }
+}
+
 /* Custom fake for shell_strtol that sets error parameter */
 static long shell_strtol_with_error(const char *str, int base, int *err)
 {
@@ -509,6 +565,10 @@ static long shell_strtol_success(const char *str, int base, int *err)
     return 100;
   else if(strcmp(str, "200") == 0)
     return 200;
+  else if(strcmp(str, "1000") == 0)
+    return 1000;
+  else if(strcmp(str, "2000") == 0)
+    return 2000;
   else if(strcmp(str, "-50") == 0)
     return -50;
 
@@ -2234,6 +2294,328 @@ ZTEST(datastore_cmd_tests, test_exec_write_multi_state_success)
   zassert_equal(captured_multi_state_write_count, 2, "should have captured 2 values");
   zassert_equal(captured_multi_state_write_values[0], 0, "first value should be 0");
   zassert_equal(captured_multi_state_write_values[1], 1, "second value should be 1");
+
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 1,
+                "shell_info should be called once");
+  zassert_true(strstr(captured_shell_output[0], "SUCCESS") == captured_shell_output[0],
+               "shell_info output should start with SUCCESS");
+  zassert_true(strstr(captured_shell_output[0], "write operation") != NULL,
+               "shell_info output should contain 'write operation'");
+}
+
+/**
+ * @test execListUint should list all uint datapoints.
+ */
+ZTEST(datastore_cmd_tests, test_exec_list_uint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "list";
+  char *argv[] = {arg0};
+  int result;
+
+  result = execListUint(shell, 1, argv);
+
+  zassert_equal(result, 0, "execListUint should return 0");
+  zassert_equal(shell_info_call_count, UINT_DATAPOINT_COUNT + 1,
+                "shell_info should be called for header + each datapoint");
+  zassert_str_equal(captured_shell_output[0], "List of unsigned int datapoint:",
+                    "first shell_info output should be the header");
+  zassert_str_equal(captured_shell_output[1], "UINT_FIRST_DATAPOINT",
+                    "second shell_info output should be UINT_FIRST_DATAPOINT");
+  zassert_str_equal(captured_shell_output[2], "UINT_SECOND_DATAPOINT",
+                    "third shell_info output should be UINT_SECOND_DATAPOINT");
+}
+
+/**
+ * @test execReadUint should return error for unknown datapoint.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_uint_unknown_datapoint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "unknown_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  result = execReadUint(shell, 2, argv);
+
+  zassert_equal(result, -ESRCH, "execReadUint should return -ESRCH for unknown datapoint");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "UNKNOWN_DATAPOINT") != NULL,
+               "shell_error output should contain the datapoint name");
+}
+
+/**
+ * @test execReadUint should return error for invalid value count.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_uint_invalid_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "invalid";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.custom_fake = shell_strtoul_with_error;
+
+  result = execReadUint(shell, 3, argv);
+
+  zassert_not_equal(result, 0, "execReadUint should return error for invalid value count");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "invalid value count") != NULL,
+               "shell_error output should contain 'invalid value count'");
+}
+
+/**
+ * @test execReadUint should return error when datastore read fails.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_uint_datastore_read_fails)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "1";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.return_val = 1;
+  datastoreReadUint_fake.return_val = -EINVAL;
+
+  result = execReadUint(shell, 3, argv);
+
+  zassert_not_equal(result, 0, "execReadUint should return error when datastore read fails");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "read operation fail") != NULL,
+               "shell_error output should contain 'read operation fail'");
+}
+
+/**
+ * @test execReadUint should successfully read multiple uint values.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_uint_success)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "2";
+  char *argv[] = {arg0, arg1, arg2};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  datastoreReadUint_fake.custom_fake = datastoreReadUint_success;
+
+  result = execReadUint(shell, 3, argv);
+
+  zassert_equal(result, 0, "execReadUint should return success");
+  zassert_equal(datastoreReadUint_fake.call_count, 1,
+                "datastoreReadUint should be called once");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 3,
+                "shell_info should be called 3 times (header + 2 values)");
+  zassert_true(strstr(captured_shell_output[0], "SUCCESS") == captured_shell_output[0],
+               "first shell_info output should start with SUCCESS");
+  zassert_true(strstr(captured_shell_output[0], "here are the values read") != NULL,
+               "first shell_info output should contain 'here are the values read'");
+  zassert_true(strstr(captured_shell_output[1], "UINT_FIRST_DATAPOINT") != NULL,
+               "second shell_info output should contain datapoint name");
+  zassert_true(strstr(captured_shell_output[1], "1000") != NULL,
+               "second shell_info output should contain value 1000");
+  zassert_true(strstr(captured_shell_output[2], "UINT_SECOND_DATAPOINT") != NULL,
+               "third shell_info output should contain datapoint name");
+  zassert_true(strstr(captured_shell_output[2], "1100") != NULL,
+               "third shell_info output should contain value 1100");
+}
+
+/**
+ * @test execWriteUint should return error for unknown datapoint.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_uint_unknown_datapoint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "unknown_datapoint";
+  char arg2[] = "1";
+  char arg3[] = "1000";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 1;
+
+  result = execWriteUint(shell, 4, argv);
+
+  zassert_equal(result, -ESRCH, "execWriteUint should return -ESRCH for unknown datapoint");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "UNKNOWN_DATAPOINT") != NULL,
+               "shell_error output should contain the datapoint name");
+}
+
+/**
+ * @test execWriteUint should return error for invalid value count.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_uint_invalid_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "invalid";
+  char arg3[] = "1000";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.custom_fake = shell_strtoul_with_error;
+
+  result = execWriteUint(shell, 4, argv);
+
+  zassert_not_equal(result, 0, "execWriteUint should return error for invalid value count");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "invalid value count") != NULL,
+               "shell_error output should contain 'invalid value count'");
+}
+
+/**
+ * @test execWriteUint should return error when not enough values provided.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_uint_not_enough_values)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "1000";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+
+  result = execWriteUint(shell, 4, argv);
+
+  zassert_equal(result, -EINVAL, "execWriteUint should return -EINVAL when not enough values provided");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "not enough value provided") != NULL,
+               "shell_error output should contain 'not enough value provided'");
+}
+
+/**
+ * @test execWriteUint should return error for invalid uint value.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_uint_invalid_uint_value)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "1000";
+  char arg4[] = "invalid_uint";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  shell_strtol_fake.custom_fake = shell_strtol_with_error;
+
+  result = execWriteUint(shell, 5, argv);
+
+  zassert_not_equal(result, 0, "execWriteUint should return error for invalid uint value");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "bad unsigned integer value") != NULL,
+               "shell_error output should contain 'bad unsigned integer value'");
+}
+
+/**
+ * @test execWriteUint should return error when datastore write fails.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_uint_datastore_write_fails)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "1";
+  char arg3[] = "1000";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 1;
+  datastoreWriteUint_fake.return_val = -EINVAL;
+
+  result = execWriteUint(shell, 4, argv);
+
+  zassert_not_equal(result, 0, "execWriteUint should return error when datastore write fails");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "operation fail") != NULL,
+               "shell_error output should contain 'operation fail'");
+}
+
+/**
+ * @test execWriteUint should successfully write multiple uint values.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_uint_success)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "uint_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "1000";
+  char arg4[] = "2000";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  shell_strtol_fake.custom_fake = shell_strtol_success;
+  datastoreWriteUint_fake.custom_fake = datastoreWriteUint_capture;
+
+  result = execWriteUint(shell, 5, argv);
+
+  zassert_equal(result, 0, "execWriteUint should return 0 on success");
+  zassert_equal(datastoreWriteUint_fake.call_count, 1,
+                "datastoreWriteUint should be called once");
+
+  /* Verify the captured values from datastoreWriteUint */
+  zassert_equal(captured_uint_write_count, 2, "should have captured 2 values");
+  zassert_equal(captured_uint_write_values[0], 1000, "first value should be 1000");
+  zassert_equal(captured_uint_write_values[1], 2000, "second value should be 2000");
 
   zassert_equal(shell_error_call_count, 0,
                 "shell_error should not be called");
