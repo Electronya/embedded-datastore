@@ -83,6 +83,41 @@ void shell_fprintf(const struct shell *shell, enum shell_vt100_color color,
     shell_info_call_count++;
 }
 
+/* Custom fake for shell_strtobool that returns different values for each call */
+static bool shell_strtobool_success(const char *str, int base, int *err)
+{
+  ARG_UNUSED(base);
+
+  *err = 0;
+
+  /* Return value based on the input string */
+  if(strcmp(str, "true") == 0)
+    return true;
+  else if(strcmp(str, "false") == 0)
+    return false;
+
+  /* Default to false */
+  return false;
+}
+
+/* Captured values from datastoreWriteBinary call */
+static bool captured_write_values[BINARY_DATAPOINT_COUNT];
+static size_t captured_write_count;
+
+/* Custom fake for datastoreWriteBinary that captures the values */
+static int datastoreWriteBinary_capture(uint32_t datapointId, bool *values,
+                                        size_t valCount, struct k_msgq *resQueue)
+{
+  ARG_UNUSED(datapointId);
+  ARG_UNUSED(resQueue);
+
+  captured_write_count = valCount;
+  for(size_t i = 0; i < valCount; ++i)
+    captured_write_values[i] = values[i];
+
+  return 0;
+}
+
 /* Mock shell functions */
 FAKE_VALUE_FUNC(unsigned long, shell_strtoul, const char *, int, int *);
 FAKE_VALUE_FUNC(long, shell_strtol, const char *, int, int *);
@@ -186,6 +221,9 @@ static void cmd_tests_before(void *f)
   shell_info_call_count = 0;
   shell_error_call_count = 0;
   shell_output_index = 0;
+
+  memset(captured_write_values, 0, sizeof(captured_write_values));
+  captured_write_count = 0;
 }
 
 /**
@@ -290,6 +328,25 @@ static unsigned long shell_strtoul_with_error(const char *str, int base, int *er
 
   *err = -EINVAL;
   return 0;
+}
+
+/* Custom fake for shell_strtobool that sets error parameter on second call */
+static bool shell_strtobool_with_error(const char *str, int base, int *err)
+{
+  ARG_UNUSED(str);
+  ARG_UNUSED(base);
+
+  /* First call succeeds, second call fails */
+  if(shell_strtobool_fake.call_count == 0)
+  {
+    *err = 0;
+    return true;
+  }
+  else
+  {
+    *err = -EINVAL;
+    return false;
+  }
 }
 
 /**
@@ -407,6 +464,208 @@ ZTEST(datastore_cmd_tests, test_exec_read_binary_success)
                "fourth shell_info output should contain the third datapoint name");
   zassert_true(strstr(captured_shell_output[3], "true") != NULL,
                "fourth shell_info output should contain true");
+}
+
+/**
+ * @test  The execWriteBinary function must return -ESRCH and print an error
+ *        when the datapoint name is not found.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_binary_unknown_datapoint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "unknown_datapoint";
+  char arg2[] = "1";
+  char arg3[] = "true";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  result = execWriteBinary(shell, 4, argv);
+
+  zassert_equal(result, -ESRCH, "execWriteBinary should return -ESRCH for unknown datapoint");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "UNKNOWN_DATAPOINT") != NULL,
+               "shell_error output should contain the datapoint name");
+}
+
+/**
+ * @test  The execWriteBinary function must return -EINVAL and print an error
+ *        when the value count argument is invalid.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_binary_invalid_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "binary_first_datapoint";
+  char arg2[] = "invalid";
+  char arg3[] = "true";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.custom_fake = shell_strtoul_with_error;
+
+  result = execWriteBinary(shell, 4, argv);
+
+  zassert_equal(result, -EINVAL, "execWriteBinary should return -EINVAL for invalid value count");
+  zassert_equal(shell_strtoul_fake.call_count, 1,
+                "shell_strtoul should be called once");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "invalid") != NULL,
+               "shell_error output should contain the invalid argument");
+}
+
+/**
+ * @test  The execWriteBinary function must return an error and print an error
+ *        when not enough values are provided for the requested count.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_binary_not_enough_values)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "binary_first_datapoint";
+  char arg2[] = "3";
+  char arg3[] = "true";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 3;
+
+  result = execWriteBinary(shell, 4, argv);
+
+  zassert_not_equal(result, 0, "execWriteBinary should return error when not enough values provided");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "not enough") != NULL,
+               "shell_error output should contain 'not enough'");
+}
+
+/**
+ * @test  The execWriteBinary function must return an error and print an error
+ *        when an invalid boolean value is provided.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_binary_invalid_bool_value)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "binary_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "true";
+  char arg4[] = "invalid_bool";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  shell_strtobool_fake.custom_fake = shell_strtobool_with_error;
+
+  result = execWriteBinary(shell, 5, argv);
+
+  zassert_not_equal(result, 0, "execWriteBinary should return error for invalid boolean value");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "bad binary value") != NULL,
+               "shell_error output should contain 'bad binary value'");
+}
+
+/**
+ * @test  The execWriteBinary function must return an error and print an error
+ *        when datastoreWriteBinary fails.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_binary_datastore_write_fails)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "binary_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "true";
+  char arg4[] = "false";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  shell_strtobool_fake.return_val = true;
+  datastoreWriteBinary_fake.return_val = -EIO;
+
+  result = execWriteBinary(shell, 5, argv);
+
+  zassert_not_equal(result, 0, "execWriteBinary should return error when datastoreWriteBinary fails");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "operation fail") != NULL,
+               "shell_error output should contain 'operation fail'");
+}
+
+/**
+ * @test  The execWriteBinary function must successfully write multiple binary values
+ *        and print success message.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_binary_success)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "binary_first_datapoint";
+  char arg2[] = "3";
+  char arg3[] = "true";
+  char arg4[] = "false";
+  char arg5[] = "true";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4, arg5};
+  int result;
+
+  shell_strtoul_fake.return_val = 3;
+  shell_strtobool_fake.custom_fake = shell_strtobool_success;
+  datastoreWriteBinary_fake.custom_fake = datastoreWriteBinary_capture;
+
+  result = execWriteBinary(shell, 6, argv);
+
+  zassert_equal(result, 0, "execWriteBinary should return success");
+  zassert_equal(shell_strtobool_fake.call_count, 3,
+                "shell_strtobool should be called three times for three values");
+  zassert_equal(datastoreWriteBinary_fake.call_count, 1,
+                "datastoreWriteBinary should be called once");
+  zassert_equal(datastoreWriteBinary_fake.arg0_val, 0,
+                "datastoreWriteBinary should be called with datapoint ID 0");
+  zassert_equal(datastoreWriteBinary_fake.arg2_val, 3,
+                "datastoreWriteBinary should be called with value count 3");
+
+  /* Verify the captured values from datastoreWriteBinary */
+  zassert_equal(captured_write_count, 3, "should have captured 3 values");
+  zassert_equal(captured_write_values[0], true, "first value should be true");
+  zassert_equal(captured_write_values[1], false, "second value should be false");
+  zassert_equal(captured_write_values[2], true, "third value should be true");
+
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_help_fake.call_count, 0,
+                "shell_help should not be called");
+  zassert_equal(shell_info_call_count, 1,
+                "shell_info should be called once for success message");
+  zassert_true(strstr(captured_shell_output[0], "SUCCESS") == captured_shell_output[0],
+               "shell_info output should start with SUCCESS");
+  zassert_true(strstr(captured_shell_output[0], "BINARY_FIRST_DATAPOINT") != NULL,
+               "shell_info output should contain first datapoint name");
+  zassert_true(strstr(captured_shell_output[0], "BINARY_THIRD_DATAPOINT") != NULL,
+               "shell_info output should contain last datapoint name");
 }
 
 ZTEST_SUITE(datastore_cmd_tests, NULL, cmd_tests_setup, cmd_tests_before, NULL, NULL);
