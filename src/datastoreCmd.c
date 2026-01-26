@@ -636,7 +636,7 @@ static int execWriteFloat(const struct shell *shell, size_t argc, char **argv)
     {
       shell_error(shell, "FAIL: bad float value %s for value %i", argv[WRITE_VALUE_FIRST_IDX + i], i);
       shell_help(shell);
-      return err;
+      return -EINVAL;
     }
   }
 

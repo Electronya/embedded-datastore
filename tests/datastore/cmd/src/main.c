@@ -173,6 +173,24 @@ static int datastoreWriteButton_capture(uint32_t datapointId, ButtonState_t *val
   return 0;
 }
 
+/* Captured values from datastoreWriteFloat call */
+static float captured_float_write_values[FLOAT_DATAPOINT_COUNT];
+static size_t captured_float_write_count;
+
+/* Custom fake for datastoreWriteFloat that captures the values */
+static int datastoreWriteFloat_capture(uint32_t datapointId, float *values,
+                                       size_t valCount, struct k_msgq *resQueue)
+{
+  ARG_UNUSED(datapointId);
+  ARG_UNUSED(resQueue);
+
+  captured_float_write_count = valCount;
+  for(size_t i = 0; i < valCount; ++i)
+    captured_float_write_values[i] = values[i];
+
+  return 0;
+}
+
 /* Mock shell functions */
 FAKE_VALUE_FUNC(unsigned long, shell_strtoul, const char *, int, int *);
 FAKE_VALUE_FUNC(long, shell_strtol, const char *, int, int *);
@@ -282,6 +300,9 @@ static void cmd_tests_before(void *f)
 
   memset(captured_button_write_values, 0, sizeof(captured_button_write_values));
   captured_button_write_count = 0;
+
+  memset(captured_float_write_values, 0, sizeof(captured_float_write_values));
+  captured_float_write_count = 0;
 }
 
 /**
@@ -1288,6 +1309,190 @@ ZTEST(datastore_cmd_tests, test_exec_read_float_success)
                "third shell_info output should contain second datapoint name");
   zassert_true(strstr(captured_shell_output[2], "22.5") != NULL,
                "third shell_info output should contain the float value");
+}
+
+/**
+ * @test  The execWriteFloat function must return -ESRCH and print an error
+ *        when the datapoint name is not found.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_float_unknown_datapoint)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "unknown_datapoint";
+  char arg2[] = "1";
+  char arg3[] = "12.5";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  result = execWriteFloat(shell, 4, argv);
+
+  zassert_equal(result, -ESRCH, "execWriteFloat should return -ESRCH for unknown datapoint");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "UNKNOWN_DATAPOINT") != NULL,
+               "shell_error output should contain the datapoint name");
+}
+
+/**
+ * @test  The execWriteFloat function must return -EINVAL and print an error
+ *        when the value count argument is invalid.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_float_invalid_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "invalid";
+  char arg3[] = "12.5";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.custom_fake = shell_strtoul_with_error;
+
+  result = execWriteFloat(shell, 4, argv);
+
+  zassert_equal(result, -EINVAL, "execWriteFloat should return -EINVAL for invalid value count");
+  zassert_equal(shell_strtoul_fake.call_count, 1,
+                "shell_strtoul should be called once");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "invalid") != NULL,
+               "shell_error output should contain the invalid argument");
+}
+
+/**
+ * @test  The execWriteFloat function must return an error and print an error
+ *        when not enough values are provided for the requested count.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_float_not_enough_values)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "3";
+  char arg3[] = "12.5";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 3;
+
+  result = execWriteFloat(shell, 4, argv);
+
+  zassert_not_equal(result, 0, "execWriteFloat should return error when not enough values provided");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "not enough") != NULL,
+               "shell_error output should contain 'not enough'");
+}
+
+/**
+ * @test  The execWriteFloat function must return an error and print an error
+ *        when an invalid float value is provided.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_float_invalid_float_value)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "12.5";
+  char arg4[] = "invalid_float";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+
+  result = execWriteFloat(shell, 5, argv);
+
+  zassert_not_equal(result, 0, "execWriteFloat should return error for invalid float value");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "bad float value") != NULL,
+               "shell_error output should contain 'bad float value'");
+}
+
+/**
+ * @test execWriteFloat should return error when datastore write fails.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_float_datastore_write_fails)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "1";
+  char arg3[] = "12.5";
+  char *argv[] = {arg0, arg1, arg2, arg3};
+  int result;
+
+  shell_strtoul_fake.return_val = 1;
+  datastoreWriteFloat_fake.return_val = -EINVAL;
+
+  result = execWriteFloat(shell, 4, argv);
+
+  zassert_not_equal(result, 0, "execWriteFloat should return error when datastore write fails");
+  zassert_equal(shell_error_call_count, 1,
+                "shell_error should be called once");
+  zassert_equal(shell_help_fake.call_count, 1,
+                "shell_help should be called once");
+  zassert_true(strstr(captured_shell_output[0], "FAIL") == captured_shell_output[0],
+               "shell_error output should start with FAIL");
+  zassert_true(strstr(captured_shell_output[0], "operation fail") != NULL,
+               "shell_error output should contain 'operation fail'");
+}
+
+/**
+ * @test execWriteFloat should successfully write multiple float values.
+ */
+ZTEST(datastore_cmd_tests, test_exec_write_float_success)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "write";
+  char arg1[] = "float_first_datapoint";
+  char arg2[] = "2";
+  char arg3[] = "12.5";
+  char arg4[] = "22.75";
+  char *argv[] = {arg0, arg1, arg2, arg3, arg4};
+  int result;
+
+  shell_strtoul_fake.return_val = 2;
+  datastoreWriteFloat_fake.custom_fake = datastoreWriteFloat_capture;
+
+  result = execWriteFloat(shell, 5, argv);
+
+  zassert_equal(result, 0, "execWriteFloat should return 0 on success");
+  zassert_equal(datastoreWriteFloat_fake.call_count, 1,
+                "datastoreWriteFloat should be called once");
+
+  /* Verify the captured values from datastoreWriteFloat */
+  zassert_equal(captured_float_write_count, 2, "should have captured 2 values");
+  zassert_equal(captured_float_write_values[0], 12.5f, "first value should be 12.5");
+  zassert_equal(captured_float_write_values[1], 22.75f, "second value should be 22.75");
+
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 1,
+                "shell_info should be called once");
+  zassert_true(strstr(captured_shell_output[0], "SUCCESS") == captured_shell_output[0],
+               "shell_info output should start with SUCCESS");
+  zassert_true(strstr(captured_shell_output[0], "write operation") != NULL,
+               "shell_info output should contain 'write operation'");
 }
 
 ZTEST_SUITE(datastore_cmd_tests, NULL, cmd_tests_setup, cmd_tests_before, NULL, NULL);
