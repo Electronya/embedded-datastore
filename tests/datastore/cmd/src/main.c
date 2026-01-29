@@ -712,6 +712,32 @@ ZTEST(datastore_cmd_tests, test_exec_read_binary_success)
 }
 
 /**
+ * @test execReadBinary should successfully read with default value count of 1.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_binary_default_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "binary_first_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  datastoreReadBinary_fake.custom_fake = datastoreReadBinary_success;
+
+  result = execReadBinary(shell, 2, argv);
+
+  zassert_equal(result, 0, "execReadBinary should return success");
+  zassert_equal(datastoreReadBinary_fake.call_count, 1,
+                "datastoreReadBinary should be called once");
+  zassert_equal(datastoreReadBinary_fake.arg1_val, 1,
+                "datastoreReadBinary should be called with default value count 1");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 2,
+                "shell_info should be called 2 times (header + 1 value)");
+}
+
+/**
  * @test  The execWriteBinary function must return -ESRCH and print an error
  *        when the datapoint name is not found.
  */
@@ -1129,6 +1155,32 @@ ZTEST(datastore_cmd_tests, test_exec_read_button_success)
 }
 
 /**
+ * @test execReadButton should successfully read with default value count of 1.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_button_default_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "button_first_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  datastoreReadButton_fake.custom_fake = datastoreReadButton_success;
+
+  result = execReadButton(shell, 2, argv);
+
+  zassert_equal(result, 0, "execReadButton should return success");
+  zassert_equal(datastoreReadButton_fake.call_count, 1,
+                "datastoreReadButton should be called once");
+  zassert_equal(datastoreReadButton_fake.arg1_val, 1,
+                "datastoreReadButton should be called with default value count 1");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 2,
+                "shell_info should be called 2 times (header + 1 value)");
+}
+
+/**
  * @test  The execWriteButton function must return -ESRCH and print an error
  *        when the datapoint name is not found.
  */
@@ -1478,6 +1530,32 @@ ZTEST(datastore_cmd_tests, test_exec_read_float_success)
 }
 
 /**
+ * @test execReadFloat should successfully read with default value count of 1.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_float_default_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "float_first_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  datastoreReadFloat_fake.custom_fake = datastoreReadFloat_success;
+
+  result = execReadFloat(shell, 2, argv);
+
+  zassert_equal(result, 0, "execReadFloat should return success");
+  zassert_equal(datastoreReadFloat_fake.call_count, 1,
+                "datastoreReadFloat should be called once");
+  zassert_equal(datastoreReadFloat_fake.arg1_val, 1,
+                "datastoreReadFloat should be called with default value count 1");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 2,
+                "shell_info should be called 2 times (header + 1 value)");
+}
+
+/**
  * @test  The execWriteFloat function must return -ESRCH and print an error
  *        when the datapoint name is not found.
  */
@@ -1799,6 +1877,32 @@ ZTEST(datastore_cmd_tests, test_exec_read_int_success)
                "third shell_info output should contain datapoint name");
   zassert_true(strstr(captured_shell_output[2], "150") != NULL,
                "third shell_info output should contain value 150");
+}
+
+/**
+ * @test execReadInt should successfully read with default value count of 1.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_int_default_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "int_first_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  datastoreReadInt_fake.custom_fake = datastoreReadInt_success;
+
+  result = execReadInt(shell, 2, argv);
+
+  zassert_equal(result, 0, "execReadInt should return success");
+  zassert_equal(datastoreReadInt_fake.call_count, 1,
+                "datastoreReadInt should be called once");
+  zassert_equal(datastoreReadInt_fake.arg1_val, 1,
+                "datastoreReadInt should be called with default value count 1");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 2,
+                "shell_info should be called 2 times (header + 1 value)");
 }
 
 /**
@@ -2124,6 +2228,32 @@ ZTEST(datastore_cmd_tests, test_exec_read_multi_state_success)
 }
 
 /**
+ * @test execReadMultiState should successfully read with default value count of 1.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_multi_state_default_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "multi_state_first_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  datastoreReadMultiState_fake.custom_fake = datastoreReadMultiState_success;
+
+  result = execReadMultiState(shell, 2, argv);
+
+  zassert_equal(result, 0, "execReadMultiState should return success");
+  zassert_equal(datastoreReadMultiState_fake.call_count, 1,
+                "datastoreReadMultiState should be called once");
+  zassert_equal(datastoreReadMultiState_fake.arg1_val, 1,
+                "datastoreReadMultiState should be called with default value count 1");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 2,
+                "shell_info should be called 2 times (header + 1 value)");
+}
+
+/**
  * @test execWriteMultiState should return error for unknown datapoint.
  */
 ZTEST(datastore_cmd_tests, test_exec_write_multi_state_unknown_datapoint)
@@ -2443,6 +2573,32 @@ ZTEST(datastore_cmd_tests, test_exec_read_uint_success)
                "third shell_info output should contain datapoint name");
   zassert_true(strstr(captured_shell_output[2], "1100") != NULL,
                "third shell_info output should contain value 1100");
+}
+
+/**
+ * @test execReadUint should successfully read with default value count of 1.
+ */
+ZTEST(datastore_cmd_tests, test_exec_read_uint_default_value_count)
+{
+  const struct shell *shell = (const struct shell *)0x1234;
+  char arg0[] = "read";
+  char arg1[] = "uint_first_datapoint";
+  char *argv[] = {arg0, arg1};
+  int result;
+
+  datastoreReadUint_fake.custom_fake = datastoreReadUint_success;
+
+  result = execReadUint(shell, 2, argv);
+
+  zassert_equal(result, 0, "execReadUint should return success");
+  zassert_equal(datastoreReadUint_fake.call_count, 1,
+                "datastoreReadUint should be called once");
+  zassert_equal(datastoreReadUint_fake.arg1_val, 1,
+                "datastoreReadUint should be called with default value count 1");
+  zassert_equal(shell_error_call_count, 0,
+                "shell_error should not be called");
+  zassert_equal(shell_info_call_count, 2,
+                "shell_info should be called 2 times (header + 1 value)");
 }
 
 /**
